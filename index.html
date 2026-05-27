@@ -55,11 +55,11 @@
            2. 카메라 위젯 & 포토부스 통합 스타일
         ========================================= */
         #camera-widget {
-            display: none; /* 초기에는 숨김 */
+            display: none; 
             position: fixed; z-index: 2000; transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
         }
 
-        /* 💻 미니 모드 (좌측 하단 맥북 카메라 스타일) */
+        /* 💻 미니 모드 */
         #camera-widget.mini {
             display: block; bottom: 30px; left: 30px; width: 280px; height: 180px;
             border-radius: 12px; border: 2px solid rgba(255,255,255,0.3);
@@ -67,9 +67,8 @@
             cursor: pointer;
         }
         #camera-widget.mini:hover { transform: scale(1.05); border-color: rgba(255,255,255,0.8); }
-        #camera-widget.mini .fullscreen-only { display: none !important; } /* 미니 모드일땐 UI 숨김 */
+        #camera-widget.mini .fullscreen-only { display: none !important; } 
         
-        /* 맥북 카메라 초록색 불빛 디테일 */
         .mac-green-dot {
             position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
             width: 6px; height: 6px; background-color: #4cd137; border-radius: 50%;
@@ -77,18 +76,23 @@
         }
         #camera-widget.fullscreen .mac-green-dot { display: none; }
 
-        /* 📸 풀스크린 모드 (포토부스 전체화면) */
+        /* 📸 풀스크린 모드 */
         #camera-widget.fullscreen {
-            display: flex; top: 0; left: 0; width: 100vw; height: 100vh;
+            display: block; top: 0; left: 0; width: 100vw; height: 100vh;
             background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px);
-            align-items: center; justify-content: center; gap: 30px; border-radius: 0; border: none;
+            border-radius: 0; border: none;
         }
         
-        /* 비디오를 담는 공통 컨테이너 */
-        #video-container {
-            position: relative; width: 100%; height: 100%; background-color: #000;
+        #camera-main-area {
+            display: flex; flex-direction: column; width: 100%; height: 100%;
         }
-        /* 풀스크린일 때의 비디오 컨테이너 크기 */
+        #camera-widget.fullscreen #camera-main-area {
+            position: absolute; top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: auto; height: auto; align-items: center; z-index: 2100;
+        }
+
+        #video-container { position: relative; width: 100%; height: 100%; background-color: #000; }
         #camera-widget.fullscreen #video-container {
             width: 800px; border-radius: 16px; overflow: hidden; box-shadow: 0 8px 32px rgba(0,0,0,0.15);
         }
@@ -96,12 +100,17 @@
         video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); z-index: 1; }
         .canvas-container { position: absolute !important; top: 0; left: 0; z-index: 2 !important; }
 
-        /* 풀스크린 전용 UI들 (스티커 팔레트, 컨트롤, 닫기버튼) */
+        /* 스티커 팔레트 */
         .sticker-palette {
             display: flex; flex-direction: column; gap: 15px; padding: 15px; height: 600px; width: 110px;
             background: rgba(255, 255, 255, 0.85); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.5);
             overflow-y: auto; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1);
         }
+        #camera-widget.fullscreen .sticker-palette {
+            position: absolute; left: 50px; top: 50%;
+            transform: translateY(-50%); z-index: 2100;
+        }
+        
         .sticker-palette::-webkit-scrollbar { width: 6px; }
         .sticker-palette::-webkit-scrollbar-thumb { background-color: #cbd1d8; border-radius: 10px; }
         .sticker-palette img { width: 70px; height: 70px; object-fit: contain; cursor: pointer; transition: transform 0.2s; flex-shrink: 0; }
@@ -125,7 +134,6 @@
         .btn-capture:active { transform: scale(0.95); }
         .btn-capture svg { width: 34px; height: 34px; fill: white; }
 
-        /* 풀스크린 닫기 버튼 */
         #btn-close-camera {
             position: absolute; top: 30px; right: 40px; background: rgba(0,0,0,0.5); color: white; border: none;
             width: 45px; height: 45px; border-radius: 50%; font-size: 20px; font-weight: bold; cursor: pointer;
@@ -149,20 +157,9 @@
     <div id="camera-widget">
         <button id="btn-close-camera" class="fullscreen-only" title="카메라 끄기">✕</button>
 
-        <div class="sticker-palette fullscreen-only">
-            <img src="sticker1.png" id="stk1" onclick="addSticker('stk1')">
-            <img src="sticker2.png" id="stk2" onclick="addSticker('stk2')">
-            <img src="sticker3.png" id="stk3" onclick="addSticker('stk3')">
-            <img src="sticker4.png" id="stk4" onclick="addSticker('stk4')">
-            <img src="sticker5.png" id="stk5" onclick="addSticker('stk5')">
-            <img src="sticker6.png" id="stk6" onclick="addSticker('stk6')">
-            <img src="sticker7.png" id="stk7" onclick="addSticker('stk7')">
-            <img src="sticker8.png" id="stk8" onclick="addSticker('stk8')">
-            <img src="sticker9.png" id="stk9" onclick="addSticker('stk9')">
-            <img src="sticker10.png" id="stk10" onclick="addSticker('stk10')">
-        </div>
+        <div class="sticker-palette fullscreen-only" id="sticker-palette-container"></div>
 
-        <div style="display: flex; flex-direction: column;">
+        <div id="camera-main-area">
             <div id="video-container">
                 <div class="mac-green-dot"></div> <video id="video" autoplay playsinline></video>
                 <canvas id="overlay-canvas"></canvas>
@@ -189,7 +186,23 @@
         document.addEventListener('DOMContentLoaded', () => {
 
             // ==========================================
-            // [기존 1] 첫 클릭 시 배경음악(BGM) 재생
+            // ⭐️ 스티커 60개 자동 생성 로직
+            // ==========================================
+            const stickerPalette = document.getElementById('sticker-palette-container');
+            if (stickerPalette) {
+                for (let i = 1; i <= 60; i++) {
+                    // 숫자 포맷 맞추기 (1 -> '01', 10 -> '10')
+                    const numStr = i.toString().padStart(2, '0');
+                    const img = document.createElement('img');
+                    img.src = `sticker${numStr}.png`;
+                    img.id = `stk${i}`;
+                    img.onclick = function() { window.addSticker(this.id); };
+                    stickerPalette.appendChild(img);
+                }
+            }
+
+            // ==========================================
+            // 첫 클릭 시 배경음악(BGM) 재생
             // ==========================================
             let isMusicPlaying = false;
             const bgMusic = document.getElementById('bgMusic');
@@ -200,7 +213,7 @@
             }, { once: true });
 
             // ==========================================
-            // [기존 2] 커스텀 아이콘 배치 & 마우스 호버 모션
+            // 커스텀 아이콘 배치 & 마우스 호버 모션
             // ==========================================
             const customLayout = [
               { "left": "22.28", "top": "6.22", "size": 81 }, { "left": "28.26", "top": "5.64", "size": 81 },
@@ -282,7 +295,7 @@
             }
 
             // ==========================================
-            // [통합] 🦋 나비 애니메이션 & 카메라 기능 제어
+            // 🦋 나비 애니메이션 & 카메라 기능 제어
             // ==========================================
             let cameraStreamActive = false;
             let fabricCanvas = null;
@@ -291,7 +304,6 @@
             const videoContainer = document.getElementById('video-container');
             const tempCanvas = document.getElementById('temp-canvas');
 
-            // 1. 나비 생성 및 클릭 시 '미니 카메라' 켜기
             function createSingleButterfly() {
                 const wrapper = document.createElement('div');
                 wrapper.classList.add('butterfly-wrapper');
@@ -301,7 +313,6 @@
                 image.classList.add('butterfly-image');
                 bobber.appendChild(image); wrapper.appendChild(bobber); document.body.appendChild(wrapper);
 
-                // 🦋 나비 클릭 이벤트 (카메라 켜기)
                 wrapper.addEventListener('click', async (e) => {
                     e.stopPropagation();
                     if (!cameraStreamActive) {
@@ -314,12 +325,10 @@
                             return;
                         }
                     }
-                    // 미니 모드로 카메라 창 띄우기
                     cameraWidget.style.display = 'block';
                     setTimeout(() => cameraWidget.className = 'mini', 10);
                 });
 
-                // 나비 이동 알고리즘
                 let bX = window.innerWidth / 2, bY = window.innerHeight / 2, bRot = 45; 
                 wrapper.style.transform = `translate(${bX}px, ${bY}px) rotate(${bRot}deg)`;
                 setTimeout(() => { wrapper.style.transition = 'transform 5s ease-in-out'; moveButterfly(); }, 100);
@@ -338,13 +347,12 @@
             }
             createSingleButterfly();
 
-            // 2. 미니 카메라 클릭 시 '풀스크린(포토부스)'으로 확장
+            // 미니 카메라 클릭 시 정중앙 풀스크린 모드로 확장
             videoContainer.addEventListener('click', (e) => {
                 if (cameraWidget.classList.contains('mini')) {
                     e.stopPropagation();
-                    cameraWidget.className = 'fullscreen'; // 클래스 변경으로 애니메이션 작동
+                    cameraWidget.className = 'fullscreen'; 
                     
-                    // 화면이 커진 후 캔버스 사이즈 맞추기 (Fabric.js)
                     setTimeout(() => {
                         const ratio = video.videoHeight / video.videoWidth;
                         const displayWidth = 800;
@@ -357,29 +365,28 @@
                         }
                         fabricCanvas.setWidth(displayWidth);
                         fabricCanvas.setHeight(displayHeight);
-                    }, 400); // CSS 트랜지션 시간 대기
+                    }, 400); 
                 }
             });
 
-            // 3. 풀스크린 닫기 버튼 ('X' 클릭 시 완전히 종료)
+            // 풀스크린 닫기 버튼 (완전 종료 및 리셋)
             document.getElementById('btn-close-camera').addEventListener('click', (e) => {
                 e.stopPropagation();
                 cameraWidget.style.display = 'none';
                 cameraWidget.className = '';
                 
-                // 카메라 사용 종료 (배터리 및 보안)
+                videoContainer.style.height = '100%';
+                
                 if (video.srcObject) {
                     video.srcObject.getTracks().forEach(track => track.stop());
                     video.srcObject = null;
                 }
                 cameraStreamActive = false;
-                
-                // 그려진 스티커 초기화
                 if (fabricCanvas) { fabricCanvas.clear(); }
             });
 
             // ==========================================
-            // [통합] 스티커 및 사진 촬영 로직
+            // ⭐️ 개선된 스티커 및 사진 캡처 저장 로직
             // ==========================================
             window.addSticker = function(imgId) {
                 if(!fabricCanvas) return;
@@ -424,26 +431,31 @@
                     setTimeout(() => document.body.removeChild(flash), 400);
                 }, 50);
 
-                // 캔버스 합성
-                const ctx = tempCanvas.getContext('2d');
-                tempCanvas.width = fabricCanvas.width;
-                tempCanvas.height = fabricCanvas.height;
-                ctx.save();
-                ctx.translate(tempCanvas.width, 0); ctx.scale(-1, 1);
-                ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
-                ctx.restore(); 
-                ctx.drawImage(fabricCanvas.getElement(), 0, 0);
-
-                // 다운로드
                 try {
+                    // 비디오 및 캔버스 합성
+                    const ctx = tempCanvas.getContext('2d');
+                    tempCanvas.width = fabricCanvas.width;
+                    tempCanvas.height = fabricCanvas.height;
+                    
+                    ctx.save();
+                    ctx.translate(tempCanvas.width, 0); 
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+                    ctx.restore(); 
+                    
+                    ctx.drawImage(fabricCanvas.getElement(), 0, 0);
+
+                    // 로컬 보안 정책을 피하기 위한 안전한 다운로드 방식
                     const finalImageURL = tempCanvas.toDataURL('image/png');
                     const link = document.createElement('a');
                     link.download = 'YerinB_Photo.png';
                     link.href = finalImageURL;
-                    document.body.appendChild(link); link.click(); document.body.removeChild(link);
+                    document.body.appendChild(link); 
+                    link.click(); 
+                    document.body.removeChild(link);
                 } catch (e) {
-                    console.error(e);
-                    alert("사진을 저장할 수 없습니다! (로컬 보안 정책 문제)");
+                    console.error("저장 에러:", e);
+                    alert("⚠️ 사진을 저장할 수 없습니다.\n컴퓨터에서 파일을 직접 연 경우 브라우저 보안 정책에 의해 저장이 차단됩니다.\n\n해결법: 깃허브 주소(GitHub Pages)를 통해 접속하시면 사진 저장이 정상적으로 작동합니다!");
                 }
             });
         });
