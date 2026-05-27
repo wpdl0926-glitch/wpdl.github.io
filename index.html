@@ -186,12 +186,11 @@
         document.addEventListener('DOMContentLoaded', () => {
 
             // ==========================================
-            // ⭐️ 스티커 60개 자동 생성 로직
+            // ⭐️ 스티커 60개 자동 생성 로직 (포토부스용)
             // ==========================================
             const stickerPalette = document.getElementById('sticker-palette-container');
             if (stickerPalette) {
                 for (let i = 1; i <= 60; i++) {
-                    // 숫자 포맷 맞추기 (1 -> '01', 10 -> '10')
                     const numStr = i.toString().padStart(2, '0');
                     const img = document.createElement('img');
                     img.src = `sticker${numStr}.png`;
@@ -213,7 +212,7 @@
             }, { once: true });
 
             // ==========================================
-            // 커스텀 아이콘 배치 & 마우스 호버 모션
+            // ⭐️ 메인 화면 커스텀 아이콘 배치 (sticker01.png ~ sticker60.png 적용)
             // ==========================================
             const customLayout = [
               { "left": "22.28", "top": "6.22", "size": 81 }, { "left": "28.26", "top": "5.64", "size": 81 },
@@ -255,7 +254,11 @@
                 for (let i = 0; i < customLayout.length; i++) {
                     const icon = document.createElement('div');
                     icon.classList.add('icon');
-                    icon.style.backgroundImage = `url('icon_${i + 18}.png')`;
+                    
+                    // ⭐️ 숫자를 01, 02 형식으로 변환하여 sticker 이미지 연결
+                    const numStr = (i + 1).toString().padStart(2, '0');
+                    icon.style.backgroundImage = `url('sticker${numStr}.png')`;
+                    
                     icon.style.left = `${customLayout[i].left}%`;
                     icon.style.top = `${customLayout[i].top}%`;
                     icon.style.width = `${customLayout[i].size}px`;
@@ -386,7 +389,7 @@
             });
 
             // ==========================================
-            // ⭐️ 개선된 스티커 및 사진 캡처 저장 로직
+            // 스티커 및 사진 캡처 저장 로직
             // ==========================================
             window.addSticker = function(imgId) {
                 if(!fabricCanvas) return;
@@ -445,7 +448,6 @@
                     
                     ctx.drawImage(fabricCanvas.getElement(), 0, 0);
 
-                    // 로컬 보안 정책을 피하기 위한 안전한 다운로드 방식
                     const finalImageURL = tempCanvas.toDataURL('image/png');
                     const link = document.createElement('a');
                     link.download = 'YerinB_Photo.png';
