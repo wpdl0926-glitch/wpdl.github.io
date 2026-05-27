@@ -35,6 +35,15 @@
             z-index: 20; cursor: pointer; will-change: transform; transform: translate(-50%, -50%) scale(1);
         }
 
+        /* ⭐️ 아이콘 5배 확대 시 뒤에 깔리는 불투명 배경 */
+        #icon-overlay {
+            display: none; position: fixed; top: 0; left: 0; 
+            width: 100vw; height: 100vh;
+            background: rgba(0, 0, 0, 0.5); /* 반투명한 검은색 */
+            backdrop-filter: blur(5px); /* 뒤를 살짝 흐리게 */
+            z-index: 1500; cursor: pointer; opacity: 0; transition: opacity 0.3s;
+        }
+
         /* === 🦋 나비 스타일 === */
         .butterfly-wrapper {
             position: fixed; left: 0; top: 0; z-index: 1000; 
@@ -79,12 +88,12 @@
         /* 📸 풀스크린 모드 */
         #camera-widget.fullscreen {
             display: block; top: 0; left: 0; width: 100vw; height: 100vh;
-            background: rgba(255, 255, 255, 0.4); backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.6); backdrop-filter: blur(20px);
             border-radius: 0; border: none;
         }
         
         #camera-main-area {
-            display: flex; flex-direction: column; width: 100%; height: 100%;
+            display: flex; flex-direction: column; width: 100%; height: 100%; gap: 15px;
         }
         #camera-widget.fullscreen #camera-main-area {
             position: absolute; top: 50%; left: 50%;
@@ -100,23 +109,23 @@
         video { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); z-index: 1; }
         .canvas-container { position: absolute !important; top: 0; left: 0; z-index: 2 !important; }
 
-        /* 스티커 팔레트 */
         .sticker-palette {
-            display: flex; flex-direction: column; gap: 15px; padding: 15px; height: 600px; width: 110px;
+            display: flex; flex-direction: row; gap: 15px; padding: 10px 15px; 
+            width: 800px; height: 100px; 
             background: rgba(255, 255, 255, 0.85); border-radius: 16px; border: 1px solid rgba(255, 255, 255, 0.5);
-            overflow-y: auto; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1);
-        }
-        #camera-widget.fullscreen .sticker-palette {
-            position: absolute; left: 50px; top: 50%;
-            transform: translateY(-50%); z-index: 2100;
+            overflow-x: auto; overflow-y: hidden; align-items: center; box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            box-sizing: border-box;
         }
         
-        .sticker-palette::-webkit-scrollbar { width: 6px; }
+        .sticker-palette::-webkit-scrollbar { height: 8px; } 
         .sticker-palette::-webkit-scrollbar-thumb { background-color: #cbd1d8; border-radius: 10px; }
-        .sticker-palette img { width: 70px; height: 70px; object-fit: contain; cursor: pointer; transition: transform 0.2s; flex-shrink: 0; }
+        .sticker-palette img { width: 65px; height: 65px; object-fit: contain; cursor: pointer; transition: transform 0.2s; flex-shrink: 0; }
         .sticker-palette img:hover { transform: scale(1.15) rotate(5deg); }
 
-        .controls { margin-top: 25px; display: flex; align-items: center; justify-content: center; position: relative; width: 100%; }
+        .controls { 
+            display: flex; align-items: center; justify-content: center; position: relative; 
+            width: 800px; height: 80px; margin-top: 5px;
+        }
         
         .btn-delete {
             background-color: transparent; border: none; cursor: pointer; position: absolute; left: 20px; 
@@ -146,6 +155,8 @@
 </head>
 <body>
 
+    <div id="icon-overlay"></div>
+
     <audio id="bgMusic" loop>
         <source src="bgm.m4a" type="audio/mp4">
     </audio>
@@ -157,13 +168,14 @@
     <div id="camera-widget">
         <button id="btn-close-camera" class="fullscreen-only" title="카메라 끄기">✕</button>
 
-        <div class="sticker-palette fullscreen-only" id="sticker-palette-container"></div>
-
         <div id="camera-main-area">
             <div id="video-container">
-                <div class="mac-green-dot"></div> <video id="video" autoplay playsinline></video>
+                <div class="mac-green-dot"></div> 
+                <video id="video" autoplay playsinline></video>
                 <canvas id="overlay-canvas"></canvas>
             </div>
+            
+            <div class="sticker-palette fullscreen-only" id="sticker-palette-container"></div>
             
             <div class="controls fullscreen-only">
                 <button class="btn-delete" id="delete-btn" title="선택된 스티커 삭제">
@@ -185,8 +197,30 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
 
+            // ⭐️ 전역 상태 관리 변수
+            let isPhotoBoothOpen = false;
+            let isIconEnlarged = false;     // 아이콘 확대 상태
+            let activeIconData = null;      // 현재 5배 확대된 아이콘 데이터
+
+            const iconOverlay = document.getElementById('icon-overlay');
+            const bgMusic = document.getElementById('bgMusic');
+            let isMusicPlaying = false;
+
             // ==========================================
-            // ⭐️ 스티커 60개 자동 생성 로직 (포토부스용)
+            // ⭐️ 아이콘 확대 해제 함수 (배경 클릭 또는 아이콘 재클릭 시)
+            // ==========================================
+            function closeEnlargedIcon() {
+                isIconEnlarged = false;
+                activeIconData = null;
+                iconOverlay.style.opacity = '0'; // 서서히 투명해짐
+                setTimeout(() => {
+                    if (!isIconEnlarged) iconOverlay.style.display = 'none';
+                }, 300);
+            }
+            iconOverlay.addEventListener('click', closeEnlargedIcon);
+
+            // ==========================================
+            // 스티커 60개 자동 생성 로직
             // ==========================================
             const stickerPalette = document.getElementById('sticker-palette-container');
             if (stickerPalette) {
@@ -200,11 +234,7 @@
                 }
             }
 
-            // ==========================================
-            // 첫 클릭 시 배경음악(BGM) 재생
-            // ==========================================
-            let isMusicPlaying = false;
-            const bgMusic = document.getElementById('bgMusic');
+            // 첫 클릭 시 BGM 재생 (화면 아무곳이나)
             document.body.addEventListener('click', () => {
                 if (!isMusicPlaying && bgMusic) {
                     bgMusic.play().then(() => { isMusicPlaying = true; }).catch(e => console.log(e));
@@ -212,7 +242,7 @@
             }, { once: true });
 
             // ==========================================
-            // ⭐️ 메인 화면 커스텀 아이콘 배치 (sticker01.png ~ sticker60.png 적용)
+            // 메인 화면 커스텀 아이콘 배치 & 확대 클릭 이벤트 추가
             // ==========================================
             const customLayout = [
               { "left": "22.28", "top": "6.22", "size": 81 }, { "left": "28.26", "top": "5.64", "size": 81 },
@@ -255,7 +285,6 @@
                     const icon = document.createElement('div');
                     icon.classList.add('icon');
                     
-                    // ⭐️ 숫자를 01, 02 형식으로 변환하여 sticker 이미지 연결
                     const numStr = (i + 1).toString().padStart(2, '0');
                     icon.style.backgroundImage = `url('sticker${numStr}.png')`;
                     
@@ -264,7 +293,32 @@
                     icon.style.width = `${customLayout[i].size}px`;
                     icon.style.height = `${customLayout[i].size}px`;
                     container.appendChild(icon);
-                    iconElementsData.push({ element: icon, currentScale: 1, targetScale: 1, cx: 0, cy: 0 });
+                    
+                    const dataObj = { element: icon, currentScale: 1, targetScale: 1, cx: 0, cy: 0 };
+                    iconElementsData.push(dataObj);
+
+                    // ⭐️ 개별 아이콘 클릭 이벤트 (5배 확대)
+                    icon.addEventListener('click', (e) => {
+                        e.stopPropagation(); // 클릭 이벤트가 부모(overlay 등)로 전파되는 것 방지
+
+                        // 아이콘을 직접 눌렀을 때도 BGM 재생 보장
+                        if (!isMusicPlaying && bgMusic) {
+                            bgMusic.play().then(() => { isMusicPlaying = true; }).catch(err => console.log(err));
+                        }
+
+                        // 이미 커진 자신을 다시 누르면 원상복구
+                        if (isIconEnlarged && activeIconData === dataObj) {
+                            closeEnlargedIcon();
+                        } else {
+                            // 확대 실행
+                            isIconEnlarged = true;
+                            activeIconData = dataObj;
+                            iconOverlay.style.display = 'block';
+                            requestAnimationFrame(() => {
+                                iconOverlay.style.opacity = '1';
+                            });
+                        }
+                    });
                 }
 
                 let mouseX = -1000, mouseY = -1000;
@@ -282,15 +336,36 @@
 
                 function animateIcons() {
                     iconElementsData.forEach(data => {
-                        const dx = mouseX - data.cx; const dy = mouseY - data.cy;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-                        if (distance < 150) {
-                            const ratio = 1 - (distance / 150);
-                            data.targetScale = 1 + (Math.sin(ratio * Math.PI / 2) * 1.0); 
-                        } else { data.targetScale = 1; }
+                        
+                        // ⭐️ 1. 포토부스가 열려있거나 아이콘이 확대된 경우 호버 모션(물결) 정지
+                        if (isPhotoBoothOpen) {
+                            data.targetScale = 1;
+                        } else if (isIconEnlarged) {
+                            if (data === activeIconData) {
+                                data.targetScale = 5.0; // ⭐️ 선택된 아이콘은 5배로 확대
+                            } else {
+                                data.targetScale = 1;   // 나머지는 기본 크기로 정지
+                            }
+                        } else {
+                            // 평상시 마우스 호버 모션
+                            const dx = mouseX - data.cx; const dy = mouseY - data.cy;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance < 150) {
+                                const ratio = 1 - (distance / 150);
+                                data.targetScale = 1 + (Math.sin(ratio * Math.PI / 2) * 1.0); 
+                            } else { data.targetScale = 1; }
+                        }
+                        
+                        // 스케일 스무딩 적용
                         data.currentScale += (data.targetScale - data.currentScale) * 0.12;
                         data.element.style.transform = `translate(-50%, -50%) scale(${data.currentScale})`;
-                        data.element.style.zIndex = data.currentScale > 1.05 ? 30 : 20;
+                        
+                        // ⭐️ 확대된 아이콘은 어두워진 배경(1500)보다 더 앞으로(1600) 나오게 설정
+                        if (isIconEnlarged && data === activeIconData) {
+                            data.element.style.zIndex = 1600; 
+                        } else {
+                            data.element.style.zIndex = data.currentScale > 1.05 ? 30 : 20;
+                        }
                     });
                     requestAnimationFrame(animateIcons);
                 }
@@ -318,6 +393,9 @@
 
                 wrapper.addEventListener('click', async (e) => {
                     e.stopPropagation();
+                    // 아이콘이 커진 상태에서 나비를 누르면 무시하거나 복구
+                    if (isIconEnlarged) return;
+
                     if (!cameraStreamActive) {
                         try {
                             const stream = await navigator.mediaDevices.getUserMedia({ video: { width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
@@ -355,6 +433,7 @@
                 if (cameraWidget.classList.contains('mini')) {
                     e.stopPropagation();
                     cameraWidget.className = 'fullscreen'; 
+                    isPhotoBoothOpen = true; // 풀스크린 진입 시 메인 화면 호버 정지
                     
                     setTimeout(() => {
                         const ratio = video.videoHeight / video.videoWidth;
@@ -377,6 +456,7 @@
                 e.stopPropagation();
                 cameraWidget.style.display = 'none';
                 cameraWidget.className = '';
+                isPhotoBoothOpen = false; // 창 닫을 때 메인 화면 호버 다시 시작
                 
                 videoContainer.style.height = '100%';
                 
@@ -424,7 +504,6 @@
                 fabricCanvas.discardActiveObject();
                 fabricCanvas.renderAll();
 
-                // 찰칵 플래시 효과
                 const flash = document.createElement('div');
                 flash.style.position = 'fixed'; flash.style.inset = '0';
                 flash.style.backgroundColor = 'white'; flash.style.zIndex = '9999'; flash.style.pointerEvents = 'none';
@@ -435,7 +514,6 @@
                 }, 50);
 
                 try {
-                    // 비디오 및 캔버스 합성
                     const ctx = tempCanvas.getContext('2d');
                     tempCanvas.width = fabricCanvas.width;
                     tempCanvas.height = fabricCanvas.height;
