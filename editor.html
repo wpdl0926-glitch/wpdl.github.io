@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>그룹 바운딩 박스 편집기</title>
+    <style>
+        body { margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; overflow: hidden; background-color: #f0f0f0; font-family: 'Arial Black', sans-serif; -webkit-user-select: none; user-select: none; }
+        .icon-scatter-container { position: relative; width: 95%; max-width: 1400px; height: 70vh; background-color: #ffffff; border: 2px dashed #ccc; overflow: visible; }
+        
+        /* === 개별 아이콘 스타일 === */
+        .icon { 
+            position: absolute; 
+            background-size: contain; 
+            background-repeat: no-repeat; 
+            background-position: center; 
+            cursor: grab; 
+            /* 중심점을 기준으로 변환하기 위해 설정 유지 */
+            transform: translate(-50%, -50%); 
+            z-index: 10;
+        }
+        .icon:active { cursor: grabbing; }
+
+        /* 그룹에 포함된 아이콘 시각 효과 */
+        .icon.selected {
+            filter: drop-shadow(0 0 5px #B26A7A);
+        }
+        
+        /* === 드래그 다중 선택 박스 (배경 드래그 시) === */
+        #selectionRect {
+            position: absolute;
+            background-color: rgba(178, 106, 122, 0.1);
+            border: 2px dashed #B26A7A;
+            display: none;
+            pointer-events: none;
+            z-index: 50;
+        }
+
+        /* === 그룹 바운딩 박스 (다중 선택 시 나타남) === */
+        #groupBoundingBox {
+            position: absolute;
+            border: 2px dashed #B26A7A;
+            display: none;
+            pointer-events: all; /* 안쪽 영역 드래그 허용 */
+            cursor: move;
+            z-index: 40;
+        }
+        
+        /* === 그룹 크기 조절 핸들 (우측 하단) === */
+        #groupResizeHandle {
+            position: absolute;
+            bottom: -6px;
+            right: -6px;
+            width: 12px;
+            height: 12px;
+            background-color: #B26A7A;
+            border-radius: 50%;
+            cursor: nwse-resize;
+            pointer-events: all;
+        }
+        
+        /* === UI 패널 & 복사 버튼 === */
+        #infoPanel { position: fixed; top: 20px; left: 20px; background: rgba(255, 255, 255, 0.95); padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.15); z-index: 100; font-family: sans-serif; width: 260px; font-size: 14px; line-height: 1.5; color: #333; }
+        #infoPanel b { color: #B26A7A; }
+        #exportBtn { position: fixed; bottom: 30px; padding: 15px 30px; font-size: 16px; font-weight: bold; background-color: #000; color: #fff; border: none; border-radius: 30px; cursor: pointer; z-index: 100; box-shadow: 0 4px 10px rgba(0,0,0,0.3); transition: background-color 0.2s; }
+        #exportBtn:hover { background-color: #333; }
+        #codeResult { position: fixed; bottom: 80px; width: 80%; max-width: 600px; height: 150px; display: none; z-index: 100; padding: 15px; font-family: monospace; border-radius: 10px; border: 2px solid #000; }
+    </style>
+</head>
+<body>
+
+    <div id="infoPanel">
+        <b>[그룹 편집 방법]</b><br>
+        1. 배경을 꾹 누른 채 <b>드래그</b>하여 아이콘을 다중 선택하세요.<br>
+        2. 빨간 점선 박스를 <b>드래그</b>하여 그룹을 이동하세요.<br>
+        3. 박스 우측 하단 점을 끌어 <b>그룹 크기</b>를 조절하세요.
+    </div>
+
+    <div class="icon-scatter-container" id="iconContainer">
+        <div id="selectionRect"></div>
+        <div id="groupBoundingBox">
+            <div id="groupResizeHandle"></div>
+        </div>
+    </div>
+    
+    <button id="exportBtn">현재 배치 코드 뽑아내기</button>
+    <textarea id="codeResult"></textarea>
+
+    <script>
+        const container = document.getElementById('iconContainer');
+        const selectionRectEl = document.getElementById('selectionRect');
+        const groupBoxEl = document.getElementById('groupBoundingBox');
+        const resizeHandleEl = document.getElementById('groupResizeHandle');
+        
+        const totalIcons = 60;
+        let iconDataList = []; // 각 아이콘의 PX 데이터를 저장할 배열
+        let selectedIconIndices = new Set(); // 선택된 아이콘의 인덱스 저장
+
+        // ========================================================
+        // 1. 아이콘 초기 생성 및 PX 기반 데이터 구조 구축
+        // ========================================================
+        const initialSize = 68;
+        // 초기 정렬 (바둑판)
+        for (let i = 0; i < totalIcons; i++) {
+            const iconEl = document.createElement('div');
+            iconEl.classList.add('icon');
+            const imageNumber = i + 18; 
+            iconEl.style.backgroundImage = `url('icon_${imageNumber}.png')`;
+            
+            // 데이터 초기값 (내부적으로는 PX 좌표를 사용하여 정밀도 유지)
+            // 배치 코드 추출 시에만 %로 변환
+            const initialXPercent = (i % 10) * 9 + 10;
+            const initialYPercent = Math.floor(i / 10) * 12 + 15;
+            
+            const initialXPx = (initialXPercent / 100) * container.offsetWidth;
+            const initialYPx = (initialYPercent / 100) * container.offsetHeight;
+
+            // DOM 스타일 적용
+            iconEl.style.width = `${initialSize}px`;
+            iconEl.style.height = `${initialSize}px`;
+            
+            // translate(-50%, -50%)를 고려하여 중심점을 PX로 직접 지정
+            updateIconDOM(iconEl, initialXPx, initialYPx, initialSize);
+            
+            container.appendChild(iconEl);
+
+            // 관리용 데이터 객체
+            iconDataList.push({
+                element: iconEl,
+                pxX: initialXPx,   // 중심 X
+                pxY: initialYPx,   // 중심 Y
+                pxSize: initialSize, // 크기
+                // 그룹 이동/리사이징 시작 시 원래 상태를 기억할 임시 변수
+                origXPx: 0, 
+                origYPx: 0,
+                origSize: 0
+            });
+        }
+
+        // DOM 업데이트 유틸리티
+        function updateIconDOM(element, x, y, size) {
+            // translate는 이미 CSS에 걸려있으므로 left/top 좌표만 업데이트
+            element.style.left = `${x}px`;
+            element.style.top = `${y}px`;
+            element.style.width = `${size}px`;
+            element.style.height = `${size}px`;
+        }
+
+        // ========================================================
+        // 2. 다중 선택 (배경 드래그) 로직
+        // ========================================================
+        let isSelectionActive = false;
+        let selectionStart = { x: 0, y: 0 };
+        let containerRect = container.getBoundingClientRect();
+
+        container.addEventListener('mousedown', (e) => {
+            // 아이콘이나 그룹 박스, 핸들을 클릭한 경우 무시
+            if (e.target !== container) return;
+
+            isSelectionActive = true;
+            selectionStart.x = e.clientX - containerRect.left;
+            selectionStart.y = e.clientY - containerRect.top;
+
+            // 선택 초기화
+            clearMultiSelection();
+            selectionRectEl.style.display = 'block';
+            selectionRectEl.style.width = '0px';
+            selectionRectEl.style.height = '0px';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isSelectionActive) return;
+
+            containerRect = container.getBoundingClientRect(); // 위치 실시간 갱신
+            const currentMouseX = Math.max(0, Math.min(containerRect.width, e.clientX - containerRect.left));
+            const currentMouseY = Math.max(0, Math.min(containerRect.height, e.clientY - containerRect.top));
+
+            // 드래그 방향에 따라 selectionRect 좌표 및 크기 계산
+            const x = Math.min(selectionStart.x, currentMouseX);
+            const y = Math.min(selectionStart.y, currentMouseY);
+            const width = Math.abs(selectionStart.x - currentMouseX);
+            const height = Math.abs(selectionStart.y - currentMouseY);
+
+            selectionRectEl.style.left = `${x}px`;
+            selectionRectEl.style.top = `${y}px`;
+            selectionRectEl.style.width = `${width}px`;
+            selectionRectEl.style.height = `${height}px`;
+
+            // 선택된 아이콘 실시간 확인
+            checkIntersection(x, y, width, height);
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isSelectionActive) {
+                isSelectionActive = false;
+                selectionRectEl.style.display = 'none';
+
+                // 선택된 아이콘이 있다면 바운딩 박스 생성
+                if (selectedIconIndices.size > 0) {
+                    updateGroupBoundingBox();
+                } else {
+                    groupBoxEl.style.display = 'none';
+                }
+            }
+        });
+
+        // 아이콘 교차 확인
+        function checkIntersection(rectX, rectY, rectWidth, rectHeight) {
+            selectedIconIndices.clear();
+            const rectRight = rectX + rectWidth;
+            const rectBottom = rectY + rectHeight;
+
+            iconDataList.forEach((icon, index) => {
+                const iconHalfSize = icon.pxSize / 2;
+                const iconLeft = icon.pxX - iconHalfSize;
+                const iconRight = icon.pxX + iconHalfSize;
+                const iconTop = icon.pxY - iconHalfSize;
+                const iconBottom = icon.pxY + iconHalfSize;
+
+                // 직사각형 교차 검사
+                const isOverlapping = !(iconRight < rectX || 
+                                         iconLeft > rectRight || 
+                                         iconBottom < rectY || 
+                                         iconTop > rectBottom);
+
+                if (isOverlapping) {
+                    selectedIconIndices.add(index);
+                    icon.element.classList.add('selected');
+                } else {
+                    icon.element.classList.remove('selected');
+                }
+            });
+        }
+
+        function clearMultiSelection() {
+            selectedIconIndices.clear();
+            iconDataList.forEach(icon => icon.element.classList.remove('selected'));
+            groupBoxEl.style.display = 'none';
+        }
+
+        // ========================================================
+        // 3. 그룹 바운딩 박스 이동 및 리사이징 로직
+        // ========================================================
+        let isGroupDragging = false;
+        let isGroupResizing = false;
+        let startMouse = { x: 0, y: 0 };
+        let origGroupBoxPx = { x: 0, y: 0, w: 0, h: 0 }; // PX 단위
+
+        // 그룹 바운딩 박스 마우스 다운 (이동 시작)
+        groupBoxEl.addEventListener('mousedown', (e) => {
+            // 리사이즈 핸들을 클릭한 경우 무시
+            if (e.target === resizeHandleEl) return;
+            e.stopPropagation(); // 배경 선택 드래그 방지
+
+            isGroupDragging = true;
+            containerRect = container.getBoundingClientRect();
+            startMouse.x = e.clientX - containerRect.left;
+            startMouse.y = e.clientY - containerRect.top;
+
+            // 현재 아이콘들의 PX 상태 기억
+            selectedIconIndices.forEach(index => {
+                const icon = iconDataList[index];
+                icon.origXPx = icon.pxX;
+                icon.origYPx = icon.pxY;
+            });
+        });
+
+        // 리사이즈 핸들 마우스 다운 (그룹 크기 조절 시작)
+        resizeHandleEl.addEventListener('mousedown', (e) => {
+            e.stopPropagation(); // 그룹 박스 이동 드래그 방지
+
+            isGroupResizing = true;
+            containerRect = container.getBoundingClientRect();
+            startMouse.x = e.clientX - containerRect.left;
+            startMouse.y = e.clientY - containerRect.top;
+
+            // 현재 박스 크기 및 아이콘 PX 상태 기억
+            origGroupBoxPx.x = parseFloat(groupBoxEl.style.left);
+            origGroupBoxPx.y = parseFloat(groupBoxEl.style.top);
+            origGroupBoxPx.w = parseFloat(groupBoxEl.style.width);
+            origGroupBoxPx.h = parseFloat(groupBoxEl.style.height);
+
+            selectedIconIndices.forEach(index => {
+                const icon = iconDataList[index];
+                icon.origXPx = icon.pxX;
+                icon.origYPx = icon.pxY;
+                icon.origSize = icon.pxSize;
+            });
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isGroupDragging && !isGroupResizing) return;
+            containerRect = container.getBoundingClientRect();
+            const currentMouseX = e.clientX - containerRect.left;
+            const currentMouseY = e.clientY - containerRect.top;
+
+            const dxPx = currentMouseX - startMouse.x;
+            const dyPx = currentMouseY - startMouse.y;
+
+            // --- 그룹 이동 로직 ---
+            if (isGroupDragging) {
+                selectedIconIndices.forEach(index => {
+                    const icon = iconDataList[index];
+                    // 원래 좌표에서 마우스 이동 거리만큼 더함
+                    const targetXPx = icon.origXPx + dxPx;
+                    const targetYPx = icon.origYPx + dyPx;
+                    
+                    // 데이터 업데이트 및 DOM 반영
+                    icon.pxX = targetXPx;
+                    icon.pxY = targetYPx;
+                    updateIconDOM(icon.element, targetXPx, targetYPx, icon.pxSize);
+                });
+                // 이동 후 바운딩 박스 좌표 갱신
+                updateGroupBoundingBox(); 
+            }
+
+            // --- 그룹 리사이징 로직 (우측 하단 핸들) ---
+            if (isGroupResizing) {
+                // 부드러운 스케일링을 위해 원래 박스 너비 대비 가로 이동 거리로 스케일 비율 계산
+                const newWidthPx = origGroupBoxPx.w + dxPx;
+                const newHeightPx = origGroupBoxPx.h + dyPx;
+
+                // 비율 고정 리사이징 (가로 너비 변화량 기준으로 세로도 같이 조절)
+                let scale = Math.max(0.1, newWidthPx / origGroupBoxPx.w);
+                
+                // 최소/최대 크기 제한 (아이콘 하나당 20px ~ 300px)
+                // 그룹 내 가장 작은 아이콘 기준으로 제한
+                let canResize = true;
+                selectedIconIndices.forEach(index => {
+                    const icon = iconDataList[index];
+                    const targetSize = icon.origSize * scale;
+                    if (targetSize < 20 || targetSize > 300) {
+                        canResize = false;
+                    }
+                });
+
+                if(canResize) {
+                    selectedIconIndices.forEach(index => {
+                        const icon = iconDataList[index];
+                        
+                        // ⭐️ 핵심 기하학 로직 (Figma 방식 복제)
+                        // 1. 박스 좌상단 기준, 아이콘 중심의 상대 좌표 계산
+                        const relX = icon.origXPx - origGroupBoxPx.x;
+                        const relY = icon.origYPx - origGroupBoxPx.y;
+                        
+                        // 2. 상대 좌표에 스케일 비율 적용
+                        const newRelX = relX * scale;
+                        const newRelY = relY * scale;
+                        
+                        // 3. 스케일링된 아이콘 크기 계산
+                        const targetSize = icon.origSize * scale;
+                        
+                        // 4. 최종 PX 절대 좌표 계산 및 업데이트
+                        const targetXPx = origGroupBoxPx.x + newRelX;
+                        const targetYPx = origGroupBoxPx.y + newRelY;
+                        
+                        icon.pxX = targetXPx;
+                        icon.pxY = targetYPx;
+                        icon.pxSize = targetSize;
+                        
+                        updateIconDOM(icon.element, targetXPx, targetYPx, targetSize);
+                    });
+                    // 리사이징 후 바운딩 박스 다시 계산
+                    updateGroupBoundingBox();
+                }
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            isGroupDragging = false;
+            isGroupResizing = false;
+        });
+
+        // 바운딩 박스 위치/크기 실시간 계산 함수
+        function updateGroupBoundingBox() {
+            if (selectedIconIndices.size === 0) {
+                groupBoxEl.style.display = 'none';
+                return;
+            }
+
+            let minX = Infinity, minY = Infinity;
+            let maxX = -Infinity, maxY = -Infinity;
+
+            selectedIconIndices.forEach(index => {
+                const icon = iconDataList[index];
+                const halfSize = icon.pxSize / 2;
+                
+                // 아이콘의 PX 외곽 좌표 (translate(-50%, -50%)를 고려하여 top/left가 중심임)
+                const left = icon.pxX - halfSize;
+                const right = icon.pxX + halfSize;
+                const top = icon.pxY - halfSize;
+                const bottom = icon.pxY + halfSize;
+
+                minX = Math.min(minX, left);
+                minY = Math.min(minY, top);
+                maxX = Math.max(maxX, right);
+                maxY = Math.max(maxY, bottom);
+            });
+
+            // 캔버스 크기를 고려하여 PX 좌표 적용
+            groupBoxEl.style.display = 'block';
+            groupBoxEl.style.left = `${minX}px`;
+            groupBoxEl.style.top = `${minY}px`;
+            groupBoxEl.style.width = `${maxX - minX}px`;
+            groupBoxEl.style.height = `${maxY - minY}px`;
+        }
+
+        // ========================================================
+        // 4. 배치 및 개별 크기 결과 추출 기능
+        // ========================================================
+        document.getElementById('exportBtn').addEventListener('click', () => {
+            let positions = [];
+            iconDataList.forEach(icon => {
+                positions.push({
+                    left: ((icon.pxX / container.offsetWidth) * 100).toFixed(2), // %로 변환
+                    top: ((icon.pxY / container.offsetHeight) * 100).toFixed(2),  // %로 변환
+                    size: parseInt(icon.pxSize) // 개별 PX 크기
+                });
+            });
+            
+            const resultTextarea = document.getElementById('codeResult');
+            resultTextarea.value = "const customLayout = " + JSON.stringify(positions, null, 2) + ";";
+            
+            resultTextarea.style.display = 'block';
+            resultTextarea.select();
+            document.execCommand('copy'); 
+            
+            alert(`바운딩 박스로 조절한 좌표와 크기 코드가 클립보드에 복사되었습니다!`);
+        });
+        
+        // 윈도우 크기 변화에 대응하기 위한 PX 데이터 업데이트
+        window.addEventListener('resize', () => {
+            // 실제 구현에서는 %와 px 사이의 변환 로직이 추가로 필요하나, 편집기에서는 생략
+        });
+
+    </script>
+</body>
+</html>
