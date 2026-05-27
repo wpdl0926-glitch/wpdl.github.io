@@ -30,17 +30,46 @@
             position: relative; width: 95%; max-width: 1400px; height: 70vh; z-index: 10;
         }
 
-        .icon {
-            position: absolute; background-size: contain; background-repeat: no-repeat; background-position: center;
-            z-index: 20; cursor: pointer; will-change: transform; transform: translate(-50%, -50%) scale(1);
+        /* ⭐️ 3D 카드 뒤집기를 위한 아이콘 구조 재설계 */
+        .icon-wrapper {
+            position: absolute;
+            z-index: 20; 
+            cursor: pointer; 
+            will-change: transform, left, top; 
         }
 
-        /* ⭐️ 아이콘 5배 확대 시 뒤에 깔리는 불투명 배경 */
+        .icon-inner {
+            position: relative;
+            width: 100%; height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .icon-wrapper.is-flipped .icon-inner {
+            transform: rotateY(180deg);
+        }
+
+        .icon-front, .icon-back {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            backface-visibility: hidden; 
+            -webkit-backface-visibility: hidden;
+        }
+
+        .icon-back {
+            transform: rotateY(180deg);
+        }
+
+        /* 아이콘 5배 확대 시 뒤에 깔리는 불투명 배경 */
         #icon-overlay {
             display: none; position: fixed; top: 0; left: 0; 
             width: 100vw; height: 100vh;
-            background: rgba(0, 0, 0, 0.5); /* 반투명한 검은색 */
-            backdrop-filter: blur(5px); /* 뒤를 살짝 흐리게 */
+            background: rgba(0, 0, 0, 0.5); 
+            backdrop-filter: blur(5px); 
             z-index: 1500; cursor: pointer; opacity: 0; transition: opacity 0.3s;
         }
 
@@ -197,31 +226,30 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
 
-            // ⭐️ 전역 상태 관리 변수
             let isPhotoBoothOpen = false;
-            let isIconEnlarged = false;     // 아이콘 확대 상태
-            let activeIconData = null;      // 현재 5배 확대된 아이콘 데이터
+            let isIconEnlarged = false;     
+            let activeIconData = null;      
 
             const iconOverlay = document.getElementById('icon-overlay');
             const bgMusic = document.getElementById('bgMusic');
             let isMusicPlaying = false;
 
-            // ==========================================
-            // ⭐️ 아이콘 확대 해제 함수 (배경 클릭 또는 아이콘 재클릭 시)
-            // ==========================================
             function closeEnlargedIcon() {
+                if (activeIconData) {
+                    activeIconData.isFlipped = false;
+                    activeIconData.element.classList.remove('is-flipped'); 
+                }
                 isIconEnlarged = false;
                 activeIconData = null;
-                iconOverlay.style.opacity = '0'; // 서서히 투명해짐
+                iconOverlay.style.opacity = '0'; 
                 setTimeout(() => {
                     if (!isIconEnlarged) iconOverlay.style.display = 'none';
+                    updateIconCenters(); 
                 }, 300);
             }
             iconOverlay.addEventListener('click', closeEnlargedIcon);
 
-            // ==========================================
             // 스티커 60개 자동 생성 로직
-            // ==========================================
             const stickerPalette = document.getElementById('sticker-palette-container');
             if (stickerPalette) {
                 for (let i = 1; i <= 60; i++) {
@@ -234,16 +262,13 @@
                 }
             }
 
-            // 첫 클릭 시 BGM 재생 (화면 아무곳이나)
             document.body.addEventListener('click', () => {
                 if (!isMusicPlaying && bgMusic) {
                     bgMusic.play().then(() => { isMusicPlaying = true; }).catch(e => console.log(e));
                 }
             }, { once: true });
 
-            // ==========================================
-            // 메인 화면 커스텀 아이콘 배치 & 확대 클릭 이벤트 추가
-            // ==========================================
+            // 메인 화면 3D 카드 구조 아이콘 생성
             const customLayout = [
               { "left": "22.28", "top": "6.22", "size": 81 }, { "left": "28.26", "top": "5.64", "size": 81 },
               { "left": "52.61", "top": "49.65", "size": 81 }, { "left": "13.36", "top": "77.50", "size": 81 },
@@ -282,35 +307,61 @@
 
             if (container) {
                 for (let i = 0; i < customLayout.length; i++) {
-                    const icon = document.createElement('div');
-                    icon.classList.add('icon');
-                    
                     const numStr = (i + 1).toString().padStart(2, '0');
-                    icon.style.backgroundImage = `url('sticker${numStr}.png')`;
+                    const oLeft = parseFloat(customLayout[i].left);
+                    const oTop = parseFloat(customLayout[i].top);
                     
-                    icon.style.left = `${customLayout[i].left}%`;
-                    icon.style.top = `${customLayout[i].top}%`;
-                    icon.style.width = `${customLayout[i].size}px`;
-                    icon.style.height = `${customLayout[i].size}px`;
-                    container.appendChild(icon);
+                    const iconWrapper = document.createElement('div');
+                    iconWrapper.classList.add('icon-wrapper');
+                    iconWrapper.style.width = `${customLayout[i].size}px`;
+                    iconWrapper.style.height = `${customLayout[i].size}px`;
+
+                    const iconInner = document.createElement('div');
+                    iconInner.classList.add('icon-inner');
+
+                    const frontFace = document.createElement('div');
+                    frontFace.classList.add('icon-front');
+                    frontFace.style.backgroundImage = `url('sticker${numStr}.png')`;
+
+                    const backFace = document.createElement('div');
+                    backFace.classList.add('icon-back');
+                    backFace.style.backgroundImage = `url('sticker_back${numStr}.png')`;
+
+                    iconInner.appendChild(frontFace);
+                    iconInner.appendChild(backFace);
+                    iconWrapper.appendChild(iconInner);
+                    container.appendChild(iconWrapper);
                     
-                    const dataObj = { element: icon, currentScale: 1, targetScale: 1, cx: 0, cy: 0 };
+                    const dataObj = { 
+                        element: iconWrapper, 
+                        originLeft: oLeft, originTop: oTop,
+                        currentLeft: oLeft, currentTop: oTop,
+                        targetLeft: oLeft, targetTop: oTop,
+                        currentScale: 1, targetScale: 1, 
+                        cx: 0, cy: 0,
+                        isFlipped: false 
+                    };
                     iconElementsData.push(dataObj);
 
-                    // ⭐️ 개별 아이콘 클릭 이벤트 (5배 확대)
-                    icon.addEventListener('click', (e) => {
-                        e.stopPropagation(); // 클릭 이벤트가 부모(overlay 등)로 전파되는 것 방지
+                    iconWrapper.addEventListener('click', (e) => {
+                        e.stopPropagation(); 
 
-                        // 아이콘을 직접 눌렀을 때도 BGM 재생 보장
                         if (!isMusicPlaying && bgMusic) {
                             bgMusic.play().then(() => { isMusicPlaying = true; }).catch(err => console.log(err));
                         }
 
-                        // 이미 커진 자신을 다시 누르면 원상복구
-                        if (isIconEnlarged && activeIconData === dataObj) {
-                            closeEnlargedIcon();
+                        if (isIconEnlarged) {
+                            if (activeIconData === dataObj) {
+                                dataObj.isFlipped = !dataObj.isFlipped;
+                                if (dataObj.isFlipped) {
+                                    iconWrapper.classList.add('is-flipped');
+                                } else {
+                                    iconWrapper.classList.remove('is-flipped');
+                                }
+                            } else {
+                                closeEnlargedIcon();
+                            }
                         } else {
-                            // 확대 실행
                             isIconEnlarged = true;
                             activeIconData = dataObj;
                             iconOverlay.style.display = 'block';
@@ -337,17 +388,25 @@
                 function animateIcons() {
                     iconElementsData.forEach(data => {
                         
-                        // ⭐️ 1. 포토부스가 열려있거나 아이콘이 확대된 경우 호버 모션(물결) 정지
                         if (isPhotoBoothOpen) {
                             data.targetScale = 1;
-                        } else if (isIconEnlarged) {
+                            data.targetLeft = data.originLeft;
+                            data.targetTop = data.originTop;
+                        } 
+                        else if (isIconEnlarged) {
                             if (data === activeIconData) {
-                                data.targetScale = 5.0; // ⭐️ 선택된 아이콘은 5배로 확대
+                                data.targetScale = 5.0; 
+                                data.targetLeft = 50; 
+                                data.targetTop = 50; 
                             } else {
-                                data.targetScale = 1;   // 나머지는 기본 크기로 정지
+                                data.targetScale = 1;   
+                                data.targetLeft = data.originLeft;
+                                data.targetTop = data.originTop;
                             }
-                        } else {
-                            // 평상시 마우스 호버 모션
+                        } 
+                        else {
+                            data.targetLeft = data.originLeft;
+                            data.targetTop = data.originTop;
                             const dx = mouseX - data.cx; const dy = mouseY - data.cy;
                             const distance = Math.sqrt(dx * dx + dy * dy);
                             if (distance < 150) {
@@ -356,11 +415,14 @@
                             } else { data.targetScale = 1; }
                         }
                         
-                        // 스케일 스무딩 적용
                         data.currentScale += (data.targetScale - data.currentScale) * 0.12;
+                        data.currentLeft += (data.targetLeft - data.currentLeft) * 0.12;
+                        data.currentTop += (data.targetTop - data.currentTop) * 0.12;
+
+                        data.element.style.left = `${data.currentLeft}%`;
+                        data.element.style.top = `${data.currentTop}%`;
                         data.element.style.transform = `translate(-50%, -50%) scale(${data.currentScale})`;
                         
-                        // ⭐️ 확대된 아이콘은 어두워진 배경(1500)보다 더 앞으로(1600) 나오게 설정
                         if (isIconEnlarged && data === activeIconData) {
                             data.element.style.zIndex = 1600; 
                         } else {
@@ -393,7 +455,7 @@
 
                 wrapper.addEventListener('click', async (e) => {
                     e.stopPropagation();
-                    // 아이콘이 커진 상태에서 나비를 누르면 무시하거나 복구
+                    
                     if (isIconEnlarged) return;
 
                     if (!cameraStreamActive) {
@@ -428,12 +490,11 @@
             }
             createSingleButterfly();
 
-            // 미니 카메라 클릭 시 정중앙 풀스크린 모드로 확장
             videoContainer.addEventListener('click', (e) => {
                 if (cameraWidget.classList.contains('mini')) {
                     e.stopPropagation();
                     cameraWidget.className = 'fullscreen'; 
-                    isPhotoBoothOpen = true; // 풀스크린 진입 시 메인 화면 호버 정지
+                    isPhotoBoothOpen = true; 
                     
                     setTimeout(() => {
                         const ratio = video.videoHeight / video.videoWidth;
@@ -451,12 +512,11 @@
                 }
             });
 
-            // 풀스크린 닫기 버튼 (완전 종료 및 리셋)
             document.getElementById('btn-close-camera').addEventListener('click', (e) => {
                 e.stopPropagation();
                 cameraWidget.style.display = 'none';
                 cameraWidget.className = '';
-                isPhotoBoothOpen = false; // 창 닫을 때 메인 화면 호버 다시 시작
+                isPhotoBoothOpen = false; 
                 
                 videoContainer.style.height = '100%';
                 
@@ -469,7 +529,7 @@
             });
 
             // ==========================================
-            // 스티커 및 사진 캡처 저장 로직
+            // ⭐️ 스티커 캡처 로직 (레티나 스케일 완벽 대응)
             // ==========================================
             window.addSticker = function(imgId) {
                 if(!fabricCanvas) return;
@@ -524,7 +584,9 @@
                     ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
                     ctx.restore(); 
                     
-                    ctx.drawImage(fabricCanvas.getElement(), 0, 0);
+                    // ⭐️ 여기서 가로 세로 크기를 강제 지정하여 레티나 화면 엇나감 해결!
+                    const fabricEl = fabricCanvas.lowerCanvasEl || fabricCanvas.getElement();
+                    ctx.drawImage(fabricEl, 0, 0, tempCanvas.width, tempCanvas.height);
 
                     const finalImageURL = tempCanvas.toDataURL('image/png');
                     const link = document.createElement('a');
