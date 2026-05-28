@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YERIN.B</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Arial Black', 'Helvetica', sans-serif;
+            background-color: #ffffff;
+            background-image: url('background_1.png');
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            position: relative;
+        }
+
+        main {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .icon-scatter-container {
+            position: relative;
+            width: 95%;
+            max-width: 1400px;
+            height: 70vh;
+        }
+
+        .icon-wrapper {
+            position: absolute;
+            z-index: 20;
+            cursor: pointer;
+            will-change: transform, left, top;
+        }
+
+        .icon-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        .icon-wrapper.is-flipped .icon-inner {
+            transform: rotateY(180deg);
+        }
+
+        .icon-front,
+        .icon-back {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-size: contain;
+            background-position: center;
+            background-repeat: no-repeat;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+        }
+
+        .icon-back {
+            transform: rotateY(180deg);
+        }
+
+        #icon-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1500;
+            cursor: pointer;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .butterfly-wrapper {
+            position: fixed;
+            left: 0;
+            top: 0;
+            z-index: 1000;
+            cursor: pointer;
+            pointer-events: auto;
+            will-change: transform;
+        }
+
+        .butterfly-wrapper:hover .butterfly-image {
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.9));
+        }
+
+        .butterfly-bob {
+            animation: bobUpAndDown 2.8s ease-in-out infinite alternate;
+            will-change: transform;
+        }
+
+        .butterfly-image {
+            width: 60px;
+            height: 60px;
+            background-image: url('butterfly.png');
+            background-size: contain;
+            background-repeat: no-repeat;
+            background-position: center;
+            animation: flapWings 0.28s cubic-bezier(0.45, 0, 0.55, 1) infinite alternate;
+            transform-origin: 50% 48%;
+            transition: filter 0.3s;
+            will-change: transform, filter;
+        }
+
+        @keyframes bobUpAndDown {
+            0% { transform: translate3d(0, -10px, 0) rotate(-2deg); }
+            50% { transform: translate3d(3px, 2px, 0) rotate(1deg); }
+            100% { transform: translate3d(-2px, 12px, 0) rotate(2deg); }
+        }
+
+        @keyframes flapWings {
+            0% { transform: perspective(120px) rotateY(-12deg) rotateZ(-3deg) scaleX(0.92) scaleY(1.04); }
+            45% { transform: perspective(120px) rotateY(8deg) rotateZ(2deg) scaleX(1.02) scaleY(0.98); }
+            100% { transform: perspective(120px) rotateY(18deg) rotateZ(4deg) scaleX(0.86) scaleY(1.05); }
+        }
+
+        #camera-widget {
+            display: none;
+            position: fixed;
+            z-index: 2000;
+            transition: all 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        #camera-widget.mini {
+            display: block;
+            bottom: 30px;
+            left: 30px;
+            width: 280px;
+            height: 180px;
+            border-radius: 12px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
+            background: #000;
+            cursor: pointer;
+        }
+
+        #camera-widget.mini:hover {
+            transform: scale(1.05);
+            border-color: rgba(255, 255, 255, 0.8);
+        }
+
+        #camera-widget.mini .fullscreen-only {
+            display: none !important;
+        }
+
+        .mac-green-dot {
+            position: absolute;
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 6px;
+            background-color: #4cd137;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #4cd137;
+            z-index: 10;
+        }
+
+        #camera-widget.fullscreen .mac-green-dot {
+            display: none;
+        }
+
+        #camera-widget.fullscreen {
+            display: block;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.6);
+            backdrop-filter: blur(20px);
+            border-radius: 0;
+            border: none;
+        }
+
+        #camera-main-area {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            gap: 15px;
+        }
+
+        #camera-widget.fullscreen #camera-main-area {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: auto;
+            height: auto;
+            align-items: center;
+            z-index: 2100;
+        }
+
+        #video-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            background-color: #000;
+        }
+
+        #camera-widget.fullscreen #video-container {
+            width: min(800px, calc(100vw - 28px));
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.15);
+        }
+
+        video {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1);
+            z-index: 1;
+        }
+
+        .canvas-container {
+            position: absolute !important;
+            top: 0;
+            left: 0;
+            z-index: 2 !important;
+        }
+
+        .sticker-palette {
+            display: flex;
+            flex-direction: row;
+            gap: 15px;
+            padding: 10px 15px;
+            width: min(800px, calc(100vw - 28px));
+            height: 100px;
+            background: rgba(255, 255, 255, 0.85);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            overflow-x: auto;
+            overflow-y: hidden;
+            align-items: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            box-sizing: border-box;
+        }
+
+        .sticker-palette::-webkit-scrollbar {
+            height: 8px;
+        }
+
+        .sticker-palette::-webkit-scrollbar-thumb {
+            background-color: #cbd1d8;
+            border-radius: 10px;
+        }
+
+        .sticker-palette img {
+            width: 65px;
+            height: 65px;
+            object-fit: contain;
+            cursor: pointer;
+            transition: transform 0.2s;
+            flex-shrink: 0;
+        }
+
+        .sticker-palette img:hover {
+            transform: scale(1.15) rotate(5deg);
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            width: min(800px, calc(100vw - 28px));
+            height: 80px;
+            margin-top: 5px;
+        }
+
+        .btn-delete {
+            background-color: transparent;
+            border: none;
+            cursor: pointer;
+            position: absolute;
+            left: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            transition: all 0.2s;
+        }
+
+        .btn-delete:hover {
+            background-color: rgba(255, 71, 87, 0.1);
+            transform: scale(1.1);
+        }
+
+        .btn-delete svg {
+            width: 28px;
+            height: 28px;
+            fill: #747d8c;
+            transition: fill 0.2s;
+        }
+
+        .btn-delete:hover svg {
+            fill: #ff4757;
+        }
+
+        .btn-capture {
+            background-color: #ff4757;
+            width: 76px;
+            height: 76px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 5px solid #ffeaa7;
+            box-shadow: 0 4px 12px rgba(255, 71, 87, 0.4);
+            cursor: pointer;
+            transition: all 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .btn-capture:hover {
+            background-color: #ff6b81;
+            transform: scale(1.08);
+        }
+
+        .btn-capture:active {
+            transform: scale(0.95);
+        }
+
+        .btn-capture svg {
+            width: 34px;
+            height: 34px;
+            fill: white;
+        }
+
+        #btn-close-camera {
+            position: absolute;
+            top: 30px;
+            right: 40px;
+            background: rgba(0, 0, 0, 0.5);
+            color: white;
+            border: none;
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            font-size: 20px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: all 0.2s;
+            z-index: 3010;
+        }
+
+        #btn-close-camera:hover {
+            background: #ff4757;
+            transform: rotate(90deg);
+        }
+
+        #temp-canvas {
+            visibility: hidden;
+            position: absolute;
+            top: -9999px;
+        }
+    </style>
+</head>
+<body>
+    <div id="icon-overlay"></div>
+
+    <audio id="bgMusic" loop>
+        <source src="bgm.m4a" type="audio/mp4">
+    </audio>
+
+    <main>
+        <div class="icon-scatter-container" id="iconContainer"></div>
+    </main>
+
+    <div id="camera-widget">
+        <button id="btn-close-camera" class="fullscreen-only" title="카메라 끄기">X</button>
+
+        <div id="camera-main-area">
+            <div id="video-container">
+                <div class="mac-green-dot"></div>
+                <video id="video" autoplay playsinline></video>
+                <canvas id="overlay-canvas"></canvas>
+            </div>
+
+            <div class="sticker-palette fullscreen-only" id="sticker-palette-container"></div>
+
+            <div class="controls fullscreen-only">
+                <button class="btn-delete" id="delete-btn" title="선택된 스티커 삭제">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/>
+                    </svg>
+                </button>
+                <button class="btn-capture" id="capture-btn" title="사진 찍고 저장하기">
+                    <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M4 4h3l2-2h6l2 2h3a2 2 0 0 1 2 2v12a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2zm8 3a5 5 0 1 0 0 10 5 5 0 0 0 0-10zm0 2a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <canvas id="temp-canvas"></canvas>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            let isPhotoBoothOpen = false;
+            let isIconEnlarged = false;
+            let activeIconData = null;
+
+            const iconOverlay = document.getElementById('icon-overlay');
+            const bgMusic = document.getElementById('bgMusic');
+            const stickerAssetVersion = '1779921709408';
+            let isMusicPlaying = false;
+
+            function stickerUrl(numStr) {
+                return `sticker${numStr}.png?v=${stickerAssetVersion}`;
+            }
+
+            function playBgMusic() {
+                if (!isMusicPlaying && bgMusic) {
+                    bgMusic.play().then(() => { isMusicPlaying = true; }).catch(err => console.log(err));
+                }
+            }
+
+            function closeEnlargedIcon() {
+                if (activeIconData) {
+                    activeIconData.isFlipped = false;
+                    activeIconData.element.classList.remove('is-flipped');
+                }
+                isIconEnlarged = false;
+                activeIconData = null;
+                iconOverlay.style.opacity = '0';
+                setTimeout(() => {
+                    if (!isIconEnlarged) iconOverlay.style.display = 'none';
+                    updateIconCenters();
+                }, 300);
+            }
+            iconOverlay.addEventListener('click', closeEnlargedIcon);
+
+            const stickerPalette = document.getElementById('sticker-palette-container');
+            if (stickerPalette) {
+                for (let i = 1; i <= 60; i++) {
+                    const numStr = i.toString().padStart(2, '0');
+                    const img = document.createElement('img');
+                    img.src = stickerUrl(numStr);
+                    img.id = `stk${i}`;
+                    img.onclick = function() { window.addSticker(this.id); };
+                    stickerPalette.appendChild(img);
+                }
+            }
+
+            const customLayout = [
+                { "left": "22.28", "top": "6.22", "size": 81 }, { "left": "28.26", "top": "5.64", "size": 81 },
+                { "left": "52.61", "top": "49.65", "size": 81 }, { "left": "13.36", "top": "77.50", "size": 81 },
+                { "left": "53.95", "top": "38.16", "size": 81 }, { "left": "62.99", "top": "36.02", "size": 81 },
+                { "left": "69.32", "top": "33.29", "size": 81 }, { "left": "80.06", "top": "25.11", "size": 81 },
+                { "left": "84.77", "top": "44.78", "size": 81 }, { "left": "71.19", "top": "53.74", "size": 81 },
+                { "left": "24.23", "top": "16.46", "size": 81 }, { "left": "42.63", "top": "40.61", "size": 81 },
+                { "left": "33.35", "top": "30.77", "size": 65 }, { "left": "48.22", "top": "42.94", "size": 81 },
+                { "left": "48.68", "top": "67.29", "size": 81 }, { "left": "63.08", "top": "49.18", "size": 81 },
+                { "left": "74.93", "top": "34.76", "size": 81 }, { "left": "80.06", "top": "39.44", "size": 81 },
+                { "left": "76.44", "top": "55.41", "size": 81 }, { "left": "43.90", "top": "11.00", "size": 81 },
+                { "left": "21.85", "top": "45.20", "size": 81 }, { "left": "25.54", "top": "54.15", "size": 81 },
+                { "left": "28.97", "top": "62.92", "size": 81 }, { "left": "34.87", "top": "63.31", "size": 81 },
+                { "left": "51.65", "top": "77.14", "size": 81 }, { "left": "58.32", "top": "43.25", "size": 81 },
+                { "left": "74.59", "top": "45.39", "size": 81 }, { "left": "74.28", "top": "23.58", "size": 81 },
+                { "left": "88.51", "top": "39.55", "size": 81 }, { "left": "63.54", "top": "23.19", "size": 81 },
+                { "left": "18.15", "top": "54.36", "size": 91 }, { "left": "59.89", "top": "70.23", "size": 81 },
+                { "left": "33.39", "top": "52.32", "size": 81 }, { "left": "38.27", "top": "76.66", "size": 81 },
+                { "left": "24.40", "top": "81.04", "size": 106 }, { "left": "22.69", "top": "65.95", "size": 81 },
+                { "left": "74.16", "top": "74.91", "size": 81 }, { "left": "79.81", "top": "51.15", "size": 81 },
+                { "left": "88.51", "top": "52.71", "size": 81 }, { "left": "28.85", "top": "16.87", "size": 81 },
+                { "left": "16.11", "top": "65.13", "size": 91 }, { "left": "19.76", "top": "93.52", "size": 81 },
+                { "left": "31.95", "top": "73.46", "size": 81 }, { "left": "38.70", "top": "52.23", "size": 81 },
+                { "left": "18.79", "top": "77.59", "size": 106 }, { "left": "54.57", "top": "67.03", "size": 81 },
+                { "left": "70.51", "top": "41.91", "size": 81 }, { "left": "84.65", "top": "32.95", "size": 81 },
+                { "left": "79.07", "top": "76.97", "size": 81 }, { "left": "83.10", "top": "56.52", "size": 81 },
+                { "left": "11.35", "top": "57.59", "size": 91 }, { "left": "29.54", "top": "44.74", "size": 81 },
+                { "left": "28.29", "top": "91.29", "size": 81 }, { "left": "33.51", "top": "84.86", "size": 81 },
+                { "left": "41.02", "top": "64.80", "size": 81 }, { "left": "56.79", "top": "79.41", "size": 81 },
+                { "left": "68.13", "top": "67.53", "size": 81 }, { "left": "71.64", "top": "84.48", "size": 81 },
+                { "left": "76.52", "top": "86.81", "size": 81 }, { "left": "80.38", "top": "88.18", "size": 81 }
+            ];
+
+            const container = document.getElementById('iconContainer');
+            let iconElementsData = [];
+
+            if (container) {
+                for (let i = 0; i < customLayout.length; i++) {
+                    const numStr = (i + 1).toString().padStart(2, '0');
+                    const oLeft = parseFloat(customLayout[i].left);
+                    const oTop = parseFloat(customLayout[i].top);
+
+                    const iconWrapper = document.createElement('div');
+                    iconWrapper.classList.add('icon-wrapper');
+                    iconWrapper.dataset.sticker = numStr;
+                    iconWrapper.setAttribute('aria-label', `sticker${numStr}`);
+                    iconWrapper.style.width = `${customLayout[i].size}px`;
+                    iconWrapper.style.height = `${customLayout[i].size}px`;
+
+                    const iconInner = document.createElement('div');
+                    iconInner.classList.add('icon-inner');
+
+                    const frontFace = document.createElement('div');
+                    frontFace.classList.add('icon-front');
+                    frontFace.style.backgroundImage = `url('${stickerUrl(numStr)}')`;
+
+                    const backFace = document.createElement('div');
+                    backFace.classList.add('icon-back');
+                    backFace.style.backgroundImage = `url('${stickerUrl(numStr)}')`;
+
+                    iconInner.appendChild(frontFace);
+                    iconInner.appendChild(backFace);
+                    iconWrapper.appendChild(iconInner);
+                    container.appendChild(iconWrapper);
+
+                    const dataObj = {
+                        element: iconWrapper,
+                        originLeft: oLeft,
+                        originTop: oTop,
+                        currentLeft: oLeft,
+                        currentTop: oTop,
+                        targetLeft: oLeft,
+                        targetTop: oTop,
+                        currentScale: 1,
+                        targetScale: 1,
+                        cx: 0,
+                        cy: 0,
+                        isFlipped: false
+                    };
+                    iconElementsData.push(dataObj);
+
+                    iconWrapper.addEventListener('click', (e) => {
+                        e.stopPropagation();
+
+                        if (iconWrapper.dataset.sticker === '45') {
+                            playBgMusic();
+                        }
+
+                        if (isIconEnlarged) {
+                            if (activeIconData === dataObj) {
+                                dataObj.isFlipped = !dataObj.isFlipped;
+                                iconWrapper.classList.toggle('is-flipped', dataObj.isFlipped);
+                            } else {
+                                closeEnlargedIcon();
+                            }
+                        } else {
+                            isIconEnlarged = true;
+                            activeIconData = dataObj;
+                            iconWrapper.style.zIndex = 1600;
+                            iconOverlay.style.display = 'block';
+                            requestAnimationFrame(() => {
+                                iconOverlay.style.opacity = '1';
+                            });
+                        }
+                    });
+                }
+
+                let mouseX = -1000;
+                let mouseY = -1000;
+                window.addEventListener('mousemove', e => {
+                    mouseX = e.clientX;
+                    mouseY = e.clientY;
+                });
+                window.addEventListener('mouseout', () => {
+                    mouseX = -1000;
+                    mouseY = -1000;
+                });
+
+                function updateIconCenters() {
+                    iconElementsData.forEach(data => {
+                        const rect = data.element.getBoundingClientRect();
+                        if (rect.width > 0) {
+                            data.cx = rect.left + rect.width / 2;
+                            data.cy = rect.top + rect.height / 2;
+                        }
+                    });
+                }
+                setTimeout(updateIconCenters, 200);
+                window.addEventListener('resize', updateIconCenters);
+
+                function settleMotion(current, target, rate, epsilon) {
+                    const next = current + (target - current) * rate;
+                    return Math.abs(next - target) < epsilon ? target : next;
+                }
+
+                function animateIcons() {
+                    iconElementsData.forEach(data => {
+                        if (isPhotoBoothOpen) {
+                            data.targetScale = 1;
+                            data.targetLeft = data.originLeft;
+                            data.targetTop = data.originTop;
+                        } else if (isIconEnlarged) {
+                            if (data === activeIconData) {
+                                data.targetScale = 5;
+                                data.targetLeft = 50;
+                                data.targetTop = 50;
+                            } else {
+                                data.targetScale = 1;
+                                data.targetLeft = data.originLeft;
+                                data.targetTop = data.originTop;
+                            }
+                        } else {
+                            data.targetLeft = data.originLeft;
+                            data.targetTop = data.originTop;
+                            const dx = mouseX - data.cx;
+                            const dy = mouseY - data.cy;
+                            const distance = Math.sqrt(dx * dx + dy * dy);
+                            if (distance < 150) {
+                                const ratio = 1 - (distance / 150);
+                                data.targetScale = 1 + (Math.sin(ratio * Math.PI / 2) * 1);
+                            } else {
+                                data.targetScale = 1;
+                            }
+                        }
+
+                        data.currentScale = settleMotion(data.currentScale, data.targetScale, 0.12, 0.001);
+                        data.currentLeft = settleMotion(data.currentLeft, data.targetLeft, 0.12, 0.01);
+                        data.currentTop = settleMotion(data.currentTop, data.targetTop, 0.12, 0.01);
+
+                        data.element.style.left = `${data.currentLeft.toFixed(3)}%`;
+                        data.element.style.top = `${data.currentTop.toFixed(3)}%`;
+                        data.element.style.transform = `translate3d(-50%, -50%, 0) scale(${data.currentScale.toFixed(4)})`;
+
+                        if (isIconEnlarged && data === activeIconData) {
+                            data.element.style.zIndex = 1600;
+                        } else {
+                            data.element.style.zIndex = data.currentScale > 1.05 ? 30 : 20;
+                        }
+                    });
+                    requestAnimationFrame(animateIcons);
+                }
+                animateIcons();
+            }
+
+            let cameraStreamActive = false;
+            let fabricCanvas = null;
+            const video = document.getElementById('video');
+            const cameraWidget = document.getElementById('camera-widget');
+            const videoContainer = document.getElementById('video-container');
+            const tempCanvas = document.getElementById('temp-canvas');
+
+            function createSingleButterfly() {
+                const wrapper = document.createElement('div');
+                wrapper.classList.add('butterfly-wrapper');
+                const bobber = document.createElement('div');
+                bobber.classList.add('butterfly-bob');
+                const image = document.createElement('div');
+                image.classList.add('butterfly-image');
+                bobber.appendChild(image);
+                wrapper.appendChild(bobber);
+                document.body.appendChild(wrapper);
+
+                wrapper.addEventListener('click', async (e) => {
+                    e.stopPropagation();
+
+                    if (isIconEnlarged) return;
+
+                    if (!cameraStreamActive) {
+                        try {
+                            const stream = await navigator.mediaDevices.getUserMedia({
+                                video: {
+                                    width: { ideal: 1280 },
+                                    height: { ideal: 720 }
+                                },
+                                audio: false
+                            });
+                            video.srcObject = stream;
+                            cameraStreamActive = true;
+                        } catch (err) {
+                            alert('카메라 접근 권한이 필요합니다.');
+                            return;
+                        }
+                    }
+                    cameraWidget.style.display = 'block';
+                    setTimeout(() => cameraWidget.className = 'mini', 10);
+                });
+
+                let bX = window.innerWidth / 2;
+                let bY = window.innerHeight / 2;
+                let bRot = 45;
+                let velocityX = 0.35;
+                let velocityY = -0.2;
+                let targetX = bX;
+                let targetY = bY;
+                let lastFlutterTurn = 0;
+
+                function chooseButterflyTarget() {
+                    const margin = 70;
+                    targetX = Math.random() * (window.innerWidth - margin * 2) + margin;
+                    targetY = Math.random() * (window.innerHeight - margin * 2) + margin;
+                }
+
+                function angleDifference(target, current) {
+                    let diff = target - (current % 360);
+                    if (diff > 180) diff -= 360;
+                    if (diff < -180) diff += 360;
+                    return diff;
+                }
+
+                function animateButterfly(time = 0) {
+                    if (time - lastFlutterTurn > 2600 || Math.hypot(targetX - bX, targetY - bY) < 110) {
+                        chooseButterflyTarget();
+                        lastFlutterTurn = time;
+                    }
+
+                    const dx = targetX - bX;
+                    const dy = targetY - bY;
+                    const distance = Math.max(1, Math.hypot(dx, dy));
+                    const drift = 0.014;
+                    const lift = Math.sin(time / 520) * 0.035;
+
+                    velocityX += (dx / distance) * drift + Math.cos(time / 900) * 0.01;
+                    velocityY += (dy / distance) * drift + lift;
+
+                    const speed = Math.hypot(velocityX, velocityY);
+                    const maxSpeed = 1.55;
+                    if (speed > maxSpeed) {
+                        velocityX = (velocityX / speed) * maxSpeed;
+                        velocityY = (velocityY / speed) * maxSpeed;
+                    }
+
+                    bX += velocityX;
+                    bY += velocityY;
+
+                    const margin = 42;
+                    if (bX < margin || bX > window.innerWidth - margin) {
+                        velocityX *= -0.75;
+                        bX = Math.max(margin, Math.min(window.innerWidth - margin, bX));
+                        chooseButterflyTarget();
+                    }
+                    if (bY < margin || bY > window.innerHeight - margin) {
+                        velocityY *= -0.75;
+                        bY = Math.max(margin, Math.min(window.innerHeight - margin, bY));
+                        chooseButterflyTarget();
+                    }
+
+                    const targetRotation = Math.atan2(velocityY, velocityX) * (180 / Math.PI) + 90;
+                    bRot += angleDifference(targetRotation, bRot) * 0.08;
+                    const sway = Math.sin(time / 230) * 5;
+
+                    wrapper.style.transform = `translate3d(${bX.toFixed(2)}px, ${bY.toFixed(2)}px, 0) rotate(${(bRot + sway).toFixed(2)}deg)`;
+                    requestAnimationFrame(animateButterfly);
+                }
+
+                chooseButterflyTarget();
+                requestAnimationFrame(animateButterfly);
+            }
+            createSingleButterfly();
+
+            videoContainer.addEventListener('click', (e) => {
+                if (cameraWidget.classList.contains('mini')) {
+                    e.stopPropagation();
+                    cameraWidget.className = 'fullscreen';
+                    isPhotoBoothOpen = true;
+
+                    setTimeout(() => {
+                        const ratio = video.videoHeight && video.videoWidth ? video.videoHeight / video.videoWidth : 9 / 16;
+                        const displayWidth = Math.min(800, window.innerWidth - 28);
+                        const displayHeight = displayWidth * ratio;
+
+                        videoContainer.style.height = displayHeight + 'px';
+
+                        if (!fabricCanvas) {
+                            fabricCanvas = new fabric.Canvas('overlay-canvas');
+                        }
+                        fabricCanvas.setWidth(displayWidth);
+                        fabricCanvas.setHeight(displayHeight);
+                    }, 400);
+                }
+            });
+
+            document.getElementById('btn-close-camera').addEventListener('click', (e) => {
+                e.stopPropagation();
+                cameraWidget.style.display = 'none';
+                cameraWidget.className = '';
+                isPhotoBoothOpen = false;
+
+                videoContainer.style.height = '100%';
+
+                if (video.srcObject) {
+                    video.srcObject.getTracks().forEach(track => track.stop());
+                    video.srcObject = null;
+                }
+                cameraStreamActive = false;
+                if (fabricCanvas) fabricCanvas.clear();
+            });
+
+            window.addSticker = function(imgId) {
+                if (!fabricCanvas) return;
+                const imgElement = document.getElementById(imgId);
+                const imgInstance = new fabric.Image(imgElement, {
+                    left: fabricCanvas.width / 2,
+                    top: fabricCanvas.height / 2,
+                    originX: 'center',
+                    originY: 'center',
+                    scaleX: 0.5,
+                    scaleY: 0.5,
+                    transparentCorners: false,
+                    cornerColor: '#111',
+                    cornerStrokeColor: '#fff',
+                    borderColor: '#111',
+                    cornerSize: 12,
+                    padding: 10,
+                    cornerStyle: 'circle'
+                });
+                fabricCanvas.add(imgInstance);
+                fabricCanvas.setActiveObject(imgInstance);
+            };
+
+            document.getElementById('delete-btn').addEventListener('click', function() {
+                if (!fabricCanvas) return;
+                const activeObject = fabricCanvas.getActiveObject();
+                if (activeObject) {
+                    fabricCanvas.remove(activeObject);
+                } else {
+                    alert('삭제할 스티커를 먼저 클릭해서 선택해주세요.');
+                }
+            });
+
+            window.addEventListener('keydown', function(e) {
+                if (!fabricCanvas) return;
+                if (e.key === 'Delete' || e.key === 'Backspace') {
+                    const activeObject = fabricCanvas.getActiveObject();
+                    if (activeObject) fabricCanvas.remove(activeObject);
+                }
+            });
+
+            document.getElementById('capture-btn').addEventListener('click', function() {
+                if (!fabricCanvas) return;
+                fabricCanvas.discardActiveObject();
+                fabricCanvas.renderAll();
+
+                const flash = document.createElement('div');
+                flash.style.position = 'fixed';
+                flash.style.inset = '0';
+                flash.style.backgroundColor = 'white';
+                flash.style.zIndex = '9999';
+                flash.style.pointerEvents = 'none';
+                document.body.appendChild(flash);
+                setTimeout(() => {
+                    flash.style.transition = 'opacity 0.4s ease-out';
+                    flash.style.opacity = '0';
+                    setTimeout(() => document.body.removeChild(flash), 400);
+                }, 50);
+
+                try {
+                    const ctx = tempCanvas.getContext('2d');
+                    tempCanvas.width = fabricCanvas.width;
+                    tempCanvas.height = fabricCanvas.height;
+
+                    ctx.save();
+                    ctx.translate(tempCanvas.width, 0);
+                    ctx.scale(-1, 1);
+                    ctx.drawImage(video, 0, 0, tempCanvas.width, tempCanvas.height);
+                    ctx.restore();
+
+                    const fabricEl = fabricCanvas.lowerCanvasEl || fabricCanvas.getElement();
+                    ctx.drawImage(fabricEl, 0, 0, tempCanvas.width, tempCanvas.height);
+
+                    const finalImageURL = tempCanvas.toDataURL('image/png');
+                    const link = document.createElement('a');
+                    link.download = 'YerinB_Photo.png';
+                    link.href = finalImageURL;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                } catch (e) {
+                    console.error('저장 에러:', e);
+                    alert('사진을 저장할 수 없습니다. 브라우저 보안 정책 때문에 차단될 수 있으니 localhost 또는 GitHub Pages에서 열어주세요.');
+                }
+            });
+        });
+    </script>
+</body>
+</html>
