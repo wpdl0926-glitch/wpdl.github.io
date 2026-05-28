@@ -90,6 +90,7 @@
             transition: opacity 0.3s;
         }
 
+        /* 디테일 컨테이너: 3D 플립을 위한 perspective 추가 */
         #detail-container {
             display: none;
             position: fixed;
@@ -99,14 +100,45 @@
             z-index: 1600;
             width: 80vw;
             height: 80vh;
-            justify-content: center;
-            align-items: center;
+            perspective: 1200px;
             opacity: 0;
             transition: opacity 0.3s;
             cursor: pointer;
         }
 
-        #detail-image {
+        /* 디테일 카드의 내부를 감싸는 영역 */
+        #detail-inner {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+            transform-style: preserve-3d;
+        }
+
+        /* 컨테이너에 is-flipped 클래스가 붙으면 180도 회전 */
+        #detail-container.is-flipped #detail-inner {
+            transform: rotateY(180deg);
+        }
+
+        /* 디테일 카드의 앞뒷면 설정 */
+        .detail-face {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            -webkit-backface-visibility: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .detail-back {
+            transform: rotateY(180deg);
+        }
+
+        .detail-face img {
             max-width: 100%;
             max-height: 100%;
             object-fit: contain;
@@ -412,7 +444,14 @@
     <div id="icon-overlay"></div>
     
     <div id="detail-container">
-        <img id="detail-image" src="" alt="Detail Image">
+        <div id="detail-inner">
+            <div class="detail-face detail-front">
+                <img id="detail-image-front" src="" alt="Detail Image Front">
+            </div>
+            <div class="detail-face detail-back">
+                <img id="detail-image-back" src="" alt="Detail Image Back">
+            </div>
+        </div>
     </div>
 
     <audio id="bgMusic" loop>
@@ -459,7 +498,8 @@
 
             const iconOverlay = document.getElementById('icon-overlay');
             const detailContainer = document.getElementById('detail-container');
-            const detailImage = document.getElementById('detail-image');
+            const detailImageFront = document.getElementById('detail-image-front');
+            const detailImageBack = document.getElementById('detail-image-back');
             const bgMusic = document.getElementById('bgMusic');
             const stickerAssetVersion = '1779921709408';
 
@@ -467,18 +507,16 @@
                 return `sticker${numStr}.png?v=${stickerAssetVersion}`;
             }
 
-            // 음악 재생 함수
             function playBgMusic() {
                 if (bgMusic) {
                     bgMusic.play().catch(err => console.log('Music play blocked:', err));
                 }
             }
 
-            // 음악 정지 및 초기화 함수
             function stopBgMusic() {
                 if (bgMusic) {
                     bgMusic.pause();
-                    bgMusic.currentTime = 0; // 재생 위치를 처음으로 돌림
+                    bgMusic.currentTime = 0; 
                 }
             }
 
@@ -486,21 +524,29 @@
                 isDetailOpen = false;
                 iconOverlay.style.opacity = '0';
                 detailContainer.style.opacity = '0';
+                detailContainer.classList.remove('is-flipped'); // 닫을 때 뒤집힌 상태 초기화
                 
-                // 디테일 화면이 닫힐 때 음악도 같이 끄기
                 stopBgMusic();
                 
                 setTimeout(() => {
                     if (!isDetailOpen) {
                         iconOverlay.style.display = 'none';
                         detailContainer.style.display = 'none';
-                        detailImage.src = '';
+                        detailImageFront.src = '';
+                        detailImageBack.src = '';
                     }
                     updateIconCenters();
                 }, 300);
             }
+            
+            // 오버레이 클릭 시 창 닫기
             iconOverlay.addEventListener('click', closeDetailView);
-            detailContainer.addEventListener('click', closeDetailView);
+            
+            // 이제 detailContainer 클릭 시 창이 닫히지 않고 플립(뒤집기) 기능 수행
+            detailContainer.addEventListener('click', (e) => {
+                e.stopPropagation();
+                detailContainer.classList.toggle('is-flipped');
+            });
 
             const stickerPalette = document.getElementById('sticker-palette-container');
             if (stickerPalette) {
@@ -602,16 +648,16 @@
                         if (!isDetailOpen) {
                             isDetailOpen = true;
                             
-                            // 여기에 캐시 방지 코드가 정확하게 들어갑니다.
-                            detailImage.src = `detail${numStr}.png?v=${stickerAssetVersion}`; 
+                            // 앞면, 뒷면 모두 동일한 이미지를 넣어 양면 카드처럼 뒤집히게 설정
+                            detailImageFront.src = `detail${numStr}.png?v=${stickerAssetVersion}`;
+                            detailImageBack.src = `detail${numStr}.png?v=${stickerAssetVersion}`; 
                             
-                            // 클릭된 스티커가 '01'이면 음악 재생
                             if (numStr === '01') {
                                 playBgMusic();
                             }
                             
                             iconOverlay.style.display = 'block';
-                            detailContainer.style.display = 'flex';
+                            detailContainer.style.display = 'block';
                             
                             requestAnimationFrame(() => {
                                 iconOverlay.style.opacity = '1';
