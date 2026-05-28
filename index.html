@@ -478,7 +478,7 @@
             function stopBgMusic() {
                 if (bgMusic) {
                     bgMusic.pause();
-                    bgMusic.currentTime = 0; // 재생 위치를 처음으로 돌림
+                    bgMusic.currentTime = 0;
                 }
             }
 
@@ -486,10 +486,9 @@
                 isDetailOpen = false;
                 iconOverlay.style.opacity = '0';
                 detailContainer.style.opacity = '0';
-                
-                // 디테일 화면이 닫힐 때 음악도 같이 끄기
+
                 stopBgMusic();
-                
+
                 setTimeout(() => {
                     if (!isDetailOpen) {
                         iconOverlay.style.display = 'none';
@@ -515,7 +514,7 @@
             }
 
             const customLayout = [
-                { "left": "22.28", "top": "6.22", "size": 81 }, { "left": "28.26", "top": "5.64", "size": 81 },
+                { "left": "22.28", "top": "6.22",  "size": 81 }, { "left": "28.26", "top": "5.64",  "size": 81 },
                 { "left": "52.61", "top": "49.65", "size": 81 }, { "left": "13.36", "top": "77.50", "size": 81 },
                 { "left": "53.95", "top": "38.16", "size": 81 }, { "left": "62.99", "top": "36.02", "size": 81 },
                 { "left": "69.32", "top": "33.29", "size": 81 }, { "left": "80.06", "top": "25.11", "size": 81 },
@@ -554,15 +553,14 @@
                 for (let i = 0; i < customLayout.length; i++) {
                     const numStr = (i + 1).toString().padStart(2, '0');
                     const oLeft = parseFloat(customLayout[i].left);
-                    const oTop = parseFloat(customLayout[i].top);
-                    
-                    const oSize = customLayout[i].size * 1.5; 
+                    const oTop  = parseFloat(customLayout[i].top);
+                    const oSize = customLayout[i].size * 1.5;
 
                     const iconWrapper = document.createElement('div');
                     iconWrapper.classList.add('icon-wrapper');
                     iconWrapper.dataset.sticker = numStr;
                     iconWrapper.setAttribute('aria-label', `sticker${numStr}`);
-                    iconWrapper.style.width = `${oSize}px`;
+                    iconWrapper.style.width  = `${oSize}px`;
                     iconWrapper.style.height = `${oSize}px`;
 
                     const iconInner = document.createElement('div');
@@ -584,13 +582,13 @@
                     const dataObj = {
                         element: iconWrapper,
                         originLeft: oLeft,
-                        originTop: oTop,
+                        originTop:  oTop,
                         currentLeft: oLeft,
-                        currentTop: oTop,
-                        targetLeft: oLeft,
-                        targetTop: oTop,
+                        currentTop:  oTop,
+                        targetLeft:  oLeft,
+                        targetTop:   oTop,
                         currentScale: 1,
-                        targetScale: 1,
+                        targetScale:  1,
                         cx: 0,
                         cy: 0
                     };
@@ -601,17 +599,18 @@
 
                         if (!isDetailOpen) {
                             isDetailOpen = true;
-                            
-                            detailImage.src = `detail${numStr}.png`; 
-                            
-                            // 클릭된 스티커가 '01'이면 음악 재생
+
+                            // ✅ 버그 수정: ?v= 버전 파라미터 추가하여 캐시 오동작 방지
+                            detailImage.src = `detail${numStr}.png?v=${stickerAssetVersion}`;
+
+                            // sticker01 클릭 시 음악 재생
                             if (numStr === '01') {
                                 playBgMusic();
                             }
-                            
+
                             iconOverlay.style.display = 'block';
                             detailContainer.style.display = 'flex';
-                            
+
                             requestAnimationFrame(() => {
                                 iconOverlay.style.opacity = '1';
                                 detailContainer.style.opacity = '1';
@@ -636,7 +635,7 @@
                         const rect = data.element.getBoundingClientRect();
                         if (rect.width > 0) {
                             data.cx = rect.left + rect.width / 2;
-                            data.cy = rect.top + rect.height / 2;
+                            data.cy = rect.top  + rect.height / 2;
                         }
                     });
                 }
@@ -652,11 +651,11 @@
                     iconElementsData.forEach(data => {
                         if (isPhotoBoothOpen || isDetailOpen) {
                             data.targetScale = 1;
-                            data.targetLeft = data.originLeft;
-                            data.targetTop = data.originTop;
+                            data.targetLeft  = data.originLeft;
+                            data.targetTop   = data.originTop;
                         } else {
                             data.targetLeft = data.originLeft;
-                            data.targetTop = data.originTop;
+                            data.targetTop  = data.originTop;
                             const dx = mouseX - data.cx;
                             const dy = mouseY - data.cy;
                             const distance = Math.sqrt(dx * dx + dy * dy);
@@ -667,17 +666,18 @@
                                 data.targetScale = 1;
                             }
                         }
+
                         const scaleDiff = Math.abs(data.currentScale - data.targetScale);
-                        const leftDiff = Math.abs(data.currentLeft - data.targetLeft);
-                        const topDiff = Math.abs(data.currentTop - data.targetTop);
+                        const leftDiff  = Math.abs(data.currentLeft  - data.targetLeft);
+                        const topDiff   = Math.abs(data.currentTop   - data.targetTop);
 
                         if (scaleDiff > 0.001 || leftDiff > 0.01 || topDiff > 0.01) {
                             data.currentScale = settleMotion(data.currentScale, data.targetScale, 0.12, 0.001);
-                            data.currentLeft = settleMotion(data.currentLeft, data.targetLeft, 0.12, 0.01);
-                            data.currentTop = settleMotion(data.currentTop, data.targetTop, 0.12, 0.01);
+                            data.currentLeft  = settleMotion(data.currentLeft,  data.targetLeft,  0.12, 0.01);
+                            data.currentTop   = settleMotion(data.currentTop,   data.targetTop,   0.12, 0.01);
 
-                            data.element.style.left = `${data.currentLeft.toFixed(3)}%`;
-                            data.element.style.top = `${data.currentTop.toFixed(3)}%`;
+                            data.element.style.left      = `${data.currentLeft.toFixed(3)}%`;
+                            data.element.style.top       = `${data.currentTop.toFixed(3)}%`;
                             data.element.style.transform = `translate3d(-50%, -50%, 0) scale(${data.currentScale.toFixed(4)})`;
 
                             const newZIndex = data.currentScale > 1.05 ? 30 : 20;
@@ -693,10 +693,10 @@
 
             let cameraStreamActive = false;
             let fabricCanvas = null;
-            const video = document.getElementById('video');
-            const cameraWidget = document.getElementById('camera-widget');
+            const video         = document.getElementById('video');
+            const cameraWidget  = document.getElementById('camera-widget');
             const videoContainer = document.getElementById('video-container');
-            const tempCanvas = document.getElementById('temp-canvas');
+            const tempCanvas    = document.getElementById('temp-canvas');
 
             function createSingleButterfly() {
                 const wrapper = document.createElement('div');
@@ -718,7 +718,7 @@
                         try {
                             const stream = await navigator.mediaDevices.getUserMedia({
                                 video: {
-                                    width: { ideal: 1280 },
+                                    width:  { ideal: 1280 },
                                     height: { ideal: 720 }
                                 },
                                 audio: false
@@ -734,7 +734,7 @@
                     setTimeout(() => cameraWidget.className = 'mini', 10);
                 });
 
-                let bX = window.innerWidth / 2;
+                let bX = window.innerWidth  / 2;
                 let bY = window.innerHeight / 2;
                 let bRot = 45;
                 let velocityX = 0.35;
@@ -745,13 +745,13 @@
 
                 function chooseButterflyTarget() {
                     const margin = 70;
-                    targetX = Math.random() * (window.innerWidth - margin * 2) + margin;
+                    targetX = Math.random() * (window.innerWidth  - margin * 2) + margin;
                     targetY = Math.random() * (window.innerHeight - margin * 2) + margin;
                 }
 
                 function angleDifference(target, current) {
                     let diff = target - (current % 360);
-                    if (diff > 180) diff -= 360;
+                    if (diff >  180) diff -= 360;
                     if (diff < -180) diff += 360;
                     return diff;
                 }
@@ -766,12 +766,12 @@
                     const dy = targetY - bY;
                     const distance = Math.max(1, Math.hypot(dx, dy));
                     const drift = 0.014;
-                    const lift = Math.sin(time / 520) * 0.035;
+                    const lift  = Math.sin(time / 520) * 0.035;
 
                     velocityX += (dx / distance) * drift + Math.cos(time / 900) * 0.01;
                     velocityY += (dy / distance) * drift + lift;
 
-                    const speed = Math.hypot(velocityX, velocityY);
+                    const speed    = Math.hypot(velocityX, velocityY);
                     const maxSpeed = 1.55;
                     if (speed > maxSpeed) {
                         velocityX = (velocityX / speed) * maxSpeed;
@@ -813,8 +813,10 @@
                     isPhotoBoothOpen = true;
 
                     setTimeout(() => {
-                        const ratio = video.videoHeight && video.videoWidth ? video.videoHeight / video.videoWidth : 9 / 16;
-                        const displayWidth = Math.min(800, window.innerWidth - 28);
+                        const ratio = video.videoHeight && video.videoWidth
+                            ? video.videoHeight / video.videoWidth
+                            : 9 / 16;
+                        const displayWidth  = Math.min(800, window.innerWidth - 28);
                         const displayHeight = displayWidth * ratio;
 
                         videoContainer.style.height = displayHeight + 'px';
@@ -848,18 +850,18 @@
                 if (!fabricCanvas) return;
                 const imgElement = document.getElementById(imgId);
                 const imgInstance = new fabric.Image(imgElement, {
-                    left: fabricCanvas.width / 2,
-                    top: fabricCanvas.height / 2,
+                    left: fabricCanvas.width  / 2,
+                    top:  fabricCanvas.height / 2,
                     originX: 'center',
                     originY: 'center',
                     scaleX: 0.5,
                     scaleY: 0.5,
                     transparentCorners: false,
-                    cornerColor: '#111',
+                    cornerColor:       '#111',
                     cornerStrokeColor: '#fff',
-                    borderColor: '#111',
-                    cornerSize: 12,
-                    padding: 10,
+                    borderColor:       '#111',
+                    cornerSize:  12,
+                    padding:     10,
                     cornerStyle: 'circle'
                 });
                 fabricCanvas.add(imgInstance);
@@ -890,11 +892,7 @@
                 fabricCanvas.renderAll();
 
                 const flash = document.createElement('div');
-                flash.style.position = 'fixed';
-                flash.style.inset = '0';
-                flash.style.backgroundColor = 'white';
-                flash.style.zIndex = '9999';
-                flash.style.pointerEvents = 'none';
+                flash.style.cssText = 'position:fixed;inset:0;background:white;z-index:9999;pointer-events:none;';
                 document.body.appendChild(flash);
                 setTimeout(() => {
                     flash.style.transition = 'opacity 0.4s ease-out';
@@ -904,7 +902,7 @@
 
                 try {
                     const ctx = tempCanvas.getContext('2d');
-                    tempCanvas.width = fabricCanvas.width;
+                    tempCanvas.width  = fabricCanvas.width;
                     tempCanvas.height = fabricCanvas.height;
 
                     ctx.save();
@@ -923,13 +921,12 @@
                     document.body.appendChild(link);
                     link.click();
                     document.body.removeChild(link);
-                } catch (e) {
-                    console.error('저장 에러:', e);
+                } catch (err) {
+                    console.error('저장 에러:', err);
                     alert('사진을 저장할 수 없습니다. 브라우저 보안 정책 때문에 차단될 수 있으니 localhost 또는 GitHub Pages에서 열어주세요.');
                 }
             });
         });
     </script>
-    detailImage.src = `detail${numStr}.png?v=${stickerAssetVersion}`;
 </body>
 </html>
