@@ -462,15 +462,23 @@
             const detailImage = document.getElementById('detail-image');
             const bgMusic = document.getElementById('bgMusic');
             const stickerAssetVersion = '1779921709408';
-            let isMusicPlaying = false;
 
             function stickerUrl(numStr) {
                 return `sticker${numStr}.png?v=${stickerAssetVersion}`;
             }
 
+            // 음악 재생 함수
             function playBgMusic() {
-                if (!isMusicPlaying && bgMusic) {
-                    bgMusic.play().then(() => { isMusicPlaying = true; }).catch(err => console.log(err));
+                if (bgMusic) {
+                    bgMusic.play().catch(err => console.log('Music play blocked:', err));
+                }
+            }
+
+            // 음악 정지 및 초기화 함수
+            function stopBgMusic() {
+                if (bgMusic) {
+                    bgMusic.pause();
+                    bgMusic.currentTime = 0; // 재생 위치를 처음으로 돌림
                 }
             }
 
@@ -478,6 +486,9 @@
                 isDetailOpen = false;
                 iconOverlay.style.opacity = '0';
                 detailContainer.style.opacity = '0';
+                
+                // 디테일 화면이 닫힐 때 음악도 같이 끄기
+                stopBgMusic();
                 
                 setTimeout(() => {
                     if (!isDetailOpen) {
@@ -588,15 +599,15 @@
                     iconWrapper.addEventListener('click', (e) => {
                         e.stopPropagation();
 
-                        if (iconWrapper.dataset.sticker === '45') {
-                            playBgMusic();
-                        }
-
                         if (!isDetailOpen) {
                             isDetailOpen = true;
                             
-                            // 파일명을 소문자 detail로 수정
                             detailImage.src = `detail${numStr}.png`; 
+                            
+                            // 클릭된 스티커가 '01'이면 음악 재생
+                            if (numStr === '01') {
+                                playBgMusic();
+                            }
                             
                             iconOverlay.style.display = 'block';
                             detailContainer.style.display = 'flex';
@@ -656,16 +667,24 @@
                                 data.targetScale = 1;
                             }
                         }
+                        const scaleDiff = Math.abs(data.currentScale - data.targetScale);
+                        const leftDiff = Math.abs(data.currentLeft - data.targetLeft);
+                        const topDiff = Math.abs(data.currentTop - data.targetTop);
 
-                        data.currentScale = settleMotion(data.currentScale, data.targetScale, 0.12, 0.001);
-                        data.currentLeft = settleMotion(data.currentLeft, data.targetLeft, 0.12, 0.01);
-                        data.currentTop = settleMotion(data.currentTop, data.targetTop, 0.12, 0.01);
+                        if (scaleDiff > 0.001 || leftDiff > 0.01 || topDiff > 0.01) {
+                            data.currentScale = settleMotion(data.currentScale, data.targetScale, 0.12, 0.001);
+                            data.currentLeft = settleMotion(data.currentLeft, data.targetLeft, 0.12, 0.01);
+                            data.currentTop = settleMotion(data.currentTop, data.targetTop, 0.12, 0.01);
 
-                        data.element.style.left = `${data.currentLeft.toFixed(3)}%`;
-                        data.element.style.top = `${data.currentTop.toFixed(3)}%`;
-                        data.element.style.transform = `translate3d(-50%, -50%, 0) scale(${data.currentScale.toFixed(4)})`;
+                            data.element.style.left = `${data.currentLeft.toFixed(3)}%`;
+                            data.element.style.top = `${data.currentTop.toFixed(3)}%`;
+                            data.element.style.transform = `translate3d(-50%, -50%, 0) scale(${data.currentScale.toFixed(4)})`;
 
-                        data.element.style.zIndex = data.currentScale > 1.05 ? 30 : 20;
+                            const newZIndex = data.currentScale > 1.05 ? 30 : 20;
+                            if (data.element.style.zIndex != newZIndex) {
+                                data.element.style.zIndex = newZIndex;
+                            }
+                        }
                     });
                     requestAnimationFrame(animateIcons);
                 }
@@ -911,5 +930,6 @@
             });
         });
     </script>
+    detailImage.src = `detail${numStr}.png?v=${stickerAssetVersion}`;
 </body>
 </html>
