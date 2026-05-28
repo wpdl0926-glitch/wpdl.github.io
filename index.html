@@ -31,16 +31,16 @@
             justify-content: center;
             align-items: center;
             width: 100%;
-            padding: 0; /* 여백 제거 */
+            padding: 0;
             box-sizing: border-box;
             position: relative;
         }
 
         .icon-scatter-container {
             position: relative;
-            width: 100vw; /* 화면 너비 꽉 차게 변경 */
-            max-width: none; /* 최대 너비 제한 해제 */
-            height: 100vh; /* 화면 높이 꽉 차게 변경 */
+            width: 100vw;
+            max-width: none;
+            height: 100vh;
         }
 
         .icon-wrapper {
@@ -545,7 +545,6 @@
                     const oLeft = parseFloat(customLayout[i].left);
                     const oTop = parseFloat(customLayout[i].top);
                     
-                    // 아이콘 크기 150% 키우기
                     const oSize = customLayout[i].size * 1.5; 
 
                     const iconWrapper = document.createElement('div');
@@ -596,7 +595,8 @@
                         if (!isDetailOpen) {
                             isDetailOpen = true;
                             
-                            detailImage.src = `Detail${numStr}.png`; 
+                            // 파일명을 소문자 detail로 수정
+                            detailImage.src = `detail${numStr}.png`; 
                             
                             iconOverlay.style.display = 'block';
                             detailContainer.style.display = 'flex';
