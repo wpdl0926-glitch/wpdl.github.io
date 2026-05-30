@@ -611,6 +611,10 @@
                     iconWrapper.style.width = `${oSize}px`;
                     iconWrapper.style.height = `${oSize}px`;
 
+                    iconWrapper.style.left = `${oLeft}%`;
+                    iconWrapper.style.top = `${oTop}%`;
+                    iconWrapper.style.transform = `translate3d(-50%, -50%, 0) scale(1)`;
+
                     const iconInner = document.createElement('div');
                     iconInner.classList.add('icon-inner');
 
