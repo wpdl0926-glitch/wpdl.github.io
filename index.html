@@ -25,6 +25,102 @@
             position: relative;
         }
 
+        /* -------------------------------------------
+           로딩 화면: 4색 애니메이션 블랍 그라데이션
+           ------------------------------------------- */
+        #loading-screen {
+            position: fixed;
+            inset: 0;
+            background-color: #ffffff;
+            z-index: 9999;
+            opacity: 1;
+            visibility: visible;
+            transition: opacity 1.2s ease-in-out, visibility 1.2s ease-in-out;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        /* 각 색상 블랍의 공통 스타일 */
+        .blob {
+            position: absolute;
+            width: 70vw;
+            height: 70vw;
+            max-width: 800px;
+            max-height: 800px;
+            border-radius: 50%;
+            filter: blur(100px); /* 몽환적인 흐림 효과 */
+            opacity: 0.8;
+            will-change: transform;
+            /* 더 역동적인 느낌을 위해 alternate 대신 loop 애니메이션 적용 */
+            animation-duration: 3s;
+            animation-iteration-count: infinite;
+            animation-timing-function: linear; /* 일정한 속도로 루프 */
+        }
+
+        /* 각 블랍별 색상, 초기 위치, 애니메이션 지정 */
+        .blob-1 { /* 파란색 */
+            background-color: rgba(150, 175, 215, 0.7); 
+            top: -20%;
+            left: -20%;
+            animation-name: moveBlob1;
+        }
+
+        .blob-2 { /* 핑크색 */
+            background-color: rgba(250, 225, 235, 0.8);
+            bottom: -20%;
+            right: -20%;
+            animation-name: moveBlob2;
+        }
+
+        .blob-3 { /* 민트색 */
+            background-color: rgba(180, 240, 210, 0.7);
+            top: 10%;
+            right: 10%;
+            animation-name: moveBlob3;
+        }
+
+        .blob-4 { /* 연노랑색 */
+            background-color: rgba(255, 250, 200, 0.7);
+            bottom: 10%;
+            left: 10%;
+            animation-name: moveBlob4;
+        }
+
+        /* 그라데이션이 화면 전체를 크게 도는 역동적인 애니메이션 정의 */
+        @keyframes moveBlob1 {
+            0% { transform: translate(-30vw, -30vh) scale(1); }
+            25% { transform: translate(15vw, 15vh) scale(1.3); }
+            50% { transform: translate(30vw, -15vh) scale(1.1); }
+            75% { transform: translate(-15vw, 30vh) scale(1.4); }
+            100% { transform: translate(-30vw, -30vh) scale(1); }
+        }
+
+        @keyframes moveBlob2 {
+            0% { transform: translate(30vw, 30vh) scale(1); }
+            25% { transform: translate(-15vw, -15vh) scale(1.3); }
+            50% { transform: translate(-30vw, 15vh) scale(1.1); }
+            75% { transform: translate(15vw, -30vh) scale(1.4); }
+            100% { transform: translate(30vw, 30vh) scale(1); }
+        }
+
+        @keyframes moveBlob3 {
+            0% { transform: translate(15vw, -15vh) scale(1); }
+            25% { transform: translate(-30vw, 15vh) scale(1.3); }
+            50% { transform: translate(30vw, 30vh) scale(1.1); }
+            75% { transform: translate(-15vw, -30vh) scale(1.4); }
+            100% { transform: translate(15vw, -15vh) scale(1); }
+        }
+
+        @keyframes moveBlob4 {
+            0% { transform: translate(-15vw, 15vh) scale(1); }
+            25% { transform: translate(30vw, -15vh) scale(1.3); }
+            50% { transform: translate(-30vw, -30vh) scale(1.1); }
+            75% { transform: translate(15vw, 30vh) scale(1.4); }
+            100% { transform: translate(-15vw, 15vh) scale(1); }
+        }
+
+        /* ------------------------------------------- */
+
         main {
             flex: 1;
             display: flex;
@@ -90,7 +186,6 @@
             transition: opacity 0.3s;
         }
 
-        /* 디테일 컨테이너: 3D 플립을 위한 perspective 추가 */
         #detail-container {
             display: none;
             position: fixed;
@@ -106,7 +201,6 @@
             cursor: pointer;
         }
 
-        /* 디테일 카드의 내부를 감싸는 영역 */
         #detail-inner {
             position: relative;
             width: 100%;
@@ -115,12 +209,10 @@
             transform-style: preserve-3d;
         }
 
-        /* 컨테이너에 is-flipped 클래스가 붙으면 180도 회전 */
         #detail-container.is-flipped #detail-inner {
             transform: rotateY(180deg);
         }
 
-        /* 디테일 카드의 앞뒷면 설정 */
         .detail-face {
             position: absolute;
             top: 0;
@@ -428,11 +520,6 @@
             z-index: 3010;
         }
 
-        #btn-close-camera:hover {
-            background: #ff4757;
-            transform: rotate(90deg);
-        }
-
         #temp-canvas {
             visibility: hidden;
             position: absolute;
@@ -441,6 +528,13 @@
     </style>
 </head>
 <body>
+    <div id="loading-screen">
+        <div class="blob blob-1"></div>
+        <div class="blob blob-2"></div>
+        <div class="blob blob-3"></div>
+        <div class="blob blob-4"></div>
+    </div>
+
     <div id="icon-overlay"></div>
     
     <div id="detail-container">
@@ -492,6 +586,17 @@
     </div>
 
     <script>
+        // 무조건 최소 3초(3000ms) 동안 로딩 애니메이션 유지 후 페이드아웃
+        window.addEventListener('load', () => {
+            const loadingScreen = document.getElementById('loading-screen');
+            if (loadingScreen) {
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    loadingScreen.style.visibility = 'hidden';
+                }, 3000); // 3초 유지
+            }
+        });
+
         document.addEventListener('DOMContentLoaded', () => {
             let isPhotoBoothOpen = false;
             let isDetailOpen = false;
@@ -559,36 +664,36 @@
             }
 
             const customLayout = [
-                { "left": "22.28", "top": "6.22", "size": 81 }, { "left": "28.26", "top": "5.64", "size": 81 },
-                { "left": "52.61", "top": "49.65", "size": 81 }, { "left": "13.36", "top": "77.50", "size": 81 },
-                { "left": "53.95", "top": "38.16", "size": 81 }, { "left": "62.99", "top": "36.02", "size": 81 },
-                { "left": "69.32", "top": "33.29", "size": 81 }, { "left": "80.06", "top": "25.11", "size": 81 },
-                { "left": "84.77", "top": "44.78", "size": 81 }, { "left": "71.19", "top": "53.74", "size": 81 },
-                { "left": "24.23", "top": "16.46", "size": 81 }, { "left": "42.63", "top": "40.61", "size": 81 },
-                { "left": "33.35", "top": "30.77", "size": 65 }, { "left": "48.22", "top": "42.94", "size": 81 },
-                { "left": "48.68", "top": "67.29", "size": 81 }, { "left": "63.08", "top": "49.18", "size": 81 },
-                { "left": "74.93", "top": "34.76", "size": 81 }, { "left": "80.06", "top": "39.44", "size": 81 },
-                { "left": "76.44", "top": "55.41", "size": 81 }, { "left": "43.90", "top": "11.00", "size": 81 },
-                { "left": "21.85", "top": "45.20", "size": 81 }, { "left": "25.54", "top": "54.15", "size": 81 },
-                { "left": "28.97", "top": "62.92", "size": 81 }, { "left": "34.87", "top": "63.31", "size": 81 },
-                { "left": "51.65", "top": "77.14", "size": 81 }, { "left": "58.32", "top": "43.25", "size": 81 },
-                { "left": "74.59", "top": "45.39", "size": 81 }, { "left": "74.28", "top": "23.58", "size": 81 },
-                { "left": "88.51", "top": "39.55", "size": 81 }, { "left": "63.54", "top": "23.19", "size": 81 },
-                { "left": "18.15", "top": "54.36", "size": 91 }, { "left": "59.89", "top": "70.23", "size": 81 },
-                { "left": "33.39", "top": "52.32", "size": 81 }, { "left": "38.27", "top": "76.66", "size": 81 },
-                { "left": "24.40", "top": "81.04", "size": 106 }, { "left": "22.69", "top": "65.95", "size": 81 },
-                { "left": "74.16", "top": "74.91", "size": 81 }, { "left": "79.81", "top": "51.15", "size": 81 },
-                { "left": "88.51", "top": "52.71", "size": 81 }, { "left": "28.85", "top": "16.87", "size": 81 },
-                { "left": "16.11", "top": "65.13", "size": 91 }, { "left": "19.76", "top": "93.52", "size": 81 },
-                { "left": "31.95", "top": "73.46", "size": 81 }, { "left": "38.70", "top": "52.23", "size": 81 },
-                { "left": "18.79", "top": "77.59", "size": 106 }, { "left": "54.57", "top": "67.03", "size": 81 },
-                { "left": "70.51", "top": "41.91", "size": 81 }, { "left": "84.65", "top": "32.95", "size": 81 },
-                { "left": "79.07", "top": "76.97", "size": 81 }, { "left": "83.10", "top": "56.52", "size": 81 },
-                { "left": "11.35", "top": "57.59", "size": 91 }, { "left": "29.54", "top": "44.74", "size": 81 },
-                { "left": "28.29", "top": "91.29", "size": 81 }, { "left": "33.51", "top": "84.86", "size": 81 },
-                { "left": "41.02", "top": "64.80", "size": 81 }, { "left": "56.79", "top": "79.41", "size": 81 },
-                { "left": "68.13", "top": "67.53", "size": 81 }, { "left": "71.64", "top": "84.48", "size": 81 },
-                { "left": "76.52", "top": "86.81", "size": 81 }, { "left": "80.38", "top": "88.18", "size": 81 }
+              { "left": "21.63", "top": "12.42", "size": 79 }, { "left": "28.19", "top": "12.98", "size": 79 },
+              { "left": "53.08", "top": "52.01", "size": 79 }, { "left": "13.10", "top": "80.84", "size": 79 },
+              { "left": "54.75", "top": "39.63", "size": 79 }, { "left": "63.25", "top": "38.66", "size": 79 },
+              { "left": "68.69", "top": "31.20", "size": 79 }, { "left": "79.97", "top": "27.97", "size": 79 },
+              { "left": "85.14", "top": "47.24", "size": 79 }, { "left": "69.96", "top": "56.30", "size": 79 },
+              { "left": "24.94", "top": "21.47", "size": 79 }, { "left": "42.19", "top": "42.45", "size": 79 },
+              { "left": "35.13", "top": "31.12", "size": 87 }, { "left": "48.09", "top": "43.75", "size": 79 },
+              { "left": "49.24", "top": "69.29", "size": 79 }, { "left": "63.34", "top": "51.55", "size": 79 },
+              { "left": "74.39", "top": "35.17", "size": 79 }, { "left": "79.55", "top": "40.18", "size": 79 },
+              { "left": "76.36", "top": "60.46", "size": 79 }, { "left": "44.55", "top": "14.15", "size": 79 },
+              { "left": "22.96", "top": "47.65", "size": 79 }, { "left": "26.57", "top": "56.42", "size": 79 },
+              { "left": "29.93", "top": "65.01", "size": 79 }, { "left": "35.71", "top": "65.39", "size": 79 },
+              { "left": "52.14", "top": "78.93", "size": 79 }, { "left": "58.68", "top": "45.74", "size": 79 },
+              { "left": "74.61", "top": "47.83", "size": 79 }, { "left": "74.31", "top": "24.36", "size": 79 },
+              { "left": "89.99", "top": "40.00", "size": 79 }, { "left": "63.79", "top": "26.09", "size": 79 },
+              { "left": "19.33", "top": "56.62", "size": 89 }, { "left": "60.22", "top": "72.17", "size": 79 },
+              { "left": "33.42", "top": "53.22", "size": 79 }, { "left": "39.04", "top": "78.46", "size": 79 },
+              { "left": "26.64", "top": "80.50", "size": 103 }, { "left": "23.78", "top": "67.97", "size": 79 },
+              { "left": "73.64", "top": "75.62", "size": 79 }, { "left": "79.73", "top": "53.48", "size": 79 },
+              { "left": "89.99", "top": "55.43", "size": 79 }, { "left": "30.86", "top": "24.68", "size": 79 },
+              { "left": "15.80", "top": "68.72", "size": 89 }, { "left": "22.16", "top": "92.87", "size": 79 },
+              { "left": "32.85", "top": "75.33", "size": 79 }, { "left": "39.60", "top": "53.13", "size": 79 },
+              { "left": "19.96", "top": "79.38", "size": 103 }, { "left": "55.00", "top": "69.03", "size": 79 },
+              { "left": "69.22", "top": "45.13", "size": 79 }, { "left": "84.82", "top": "32.69", "size": 79 },
+              { "left": "79.42", "top": "78.77", "size": 79 }, { "left": "84.07", "top": "59.30", "size": 79 },
+              { "left": "10.86", "top": "59.50", "size": 89 }, { "left": "30.70", "top": "44.10", "size": 79 },
+              { "left": "29.26", "top": "92.79", "size": 79 }, { "left": "34.38", "top": "86.50", "size": 79 },
+              { "left": "41.73", "top": "66.85", "size": 79 }, { "left": "57.18", "top": "81.16", "size": 79 },
+              { "left": "68.29", "top": "69.52", "size": 79 }, { "left": "68.79", "top": "85.84", "size": 79 },
+              { "left": "75.04", "top": "88.27", "size": 79 }, { "left": "81.40", "top": "89.75", "size": 79 }
             ];
 
             const container = document.getElementById('iconContainer');
@@ -600,7 +705,6 @@
                     const oLeft = parseFloat(customLayout[i].left);
                     const oTop = parseFloat(customLayout[i].top);
                     
-                    // 기존 배율 1.5에서 0.8배를 곱한 1.2로 수정되었습니다.
                     const oSize = customLayout[i].size * 1.2; 
 
                     const iconWrapper = document.createElement('div');
@@ -610,7 +714,6 @@
                     iconWrapper.style.width = `${oSize}px`;
                     iconWrapper.style.height = `${oSize}px`;
 
-                    // 로딩 시 좌측 상단으로 몰리는 버그 수정을 위한 초기 위치 설정 코드
                     iconWrapper.style.left = `${oLeft}%`;
                     iconWrapper.style.top = `${oTop}%`;
                     iconWrapper.style.transform = `translate3d(-50%, -50%, 0) scale(1)`;
