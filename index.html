@@ -40,10 +40,10 @@
 
         .category-item {
             font-family: 'Helvetica', sans-serif;
-            font-weight: 400;
+            font-weight: 400; /* Regular */
             font-size: 10pt; 
-            letter-spacing: -0.02em;
-            color: #000000;
+            letter-spacing: -0.02em; /* -2% */
+            color: #000000; /* 기본 검은색 */
             cursor: pointer;
             transition: color 0.3s ease;
             text-transform: uppercase;
@@ -53,11 +53,13 @@
             color: #FF969D;
         }
 
+        /* 클릭 시(활성화 시) 적용될 색상 */
         .category-item.active {
             color: #FF969D;
         }
         /* ------------------------------------------- */
 
+        /* 로딩 화면 */
         #loading-screen {
             position: fixed;
             inset: 0;
@@ -771,36 +773,36 @@
                   { "left": "75.04", "top": "88.27", "size": 79 }, { "left": "81.40", "top": "89.75", "size": 79 }
                 ],
                 feature: [
-                  { "left": "79.37", "top": "49.85", "size": 68 }, { "left": "55.47", "top": "49.42", "size": 68 },
-                  { "left": "43.74", "top": "79.59", "size": 68 }, { "left": "70.55", "top": "49.99", "size": 68 },
-                  { "left": "75.42", "top": "38.79", "size": 68 }, { "left": "55.50", "top": "39.36", "size": 68 },
-                  { "left": "83.44", "top": "37.35", "size": 68 }, { "left": "55.34", "top": "28.01", "size": 68 },
-                  { "left": "50.38", "top": "47.98", "size": 68 }, { "left": "65.29", "top": "60.34", "size": 68 },
-                  { "left": "28.73", "top": "59.61", "size": 68 }, { "left": "28.90", "top": "48.26", "size": 68 },
-                  { "left": "44.17", "top": "90.07", "size": 68 }, { "left": "43.98", "top": "70.10", "size": 68 },
-                  { "left": "28.62", "top": "27.72", "size": 68 }, { "left": "82.85", "top": "28.29", "size": 68 },
-                  { "left": "44.70", "top": "9.04", "size": 68 },  { "left": "44.65", "top": "28.29", "size": 68 },
-                  { "left": "34.64", "top": "38.21", "size": 68 }, { "left": "44.42", "top": "18.38", "size": 68 },
-                  { "left": "28.80", "top": "70.10", "size": 68 }, { "left": "50.05", "top": "26.99", "size": 68 },
-                  { "left": "23.37", "top": "47.97", "size": 68 }, { "left": "44.26", "top": "61.91", "size": 68 },
-                  { "left": "40.09", "top": "28.14", "size": 68 }, { "left": "34.27", "top": "49.41", "size": 68 },
-                  { "left": "49.83", "top": "60.04", "size": 68 }, { "left": "49.99", "top": "70.53", "size": 68 },
-                  { "left": "60.28", "top": "28.00", "size": 68 }, { "left": "65.57", "top": "28.57", "size": 68 },
-                  { "left": "44.40", "top": "51.27", "size": 68 }, { "left": "44.43", "top": "39.34", "size": 68 },
-                  { "left": "65.25", "top": "50.12", "size": 68 }, { "left": "55.73", "top": "61.04", "size": 68 },
-                  { "left": "23.21", "top": "38.34", "size": 68 }, { "left": "28.79", "top": "37.91", "size": 68 },
-                  { "left": "39.85", "top": "39.49", "size": 68 }, { "left": "60.39", "top": "50.26", "size": 68 },
-                  { "left": "50.16", "top": "79.57", "size": 68 }, { "left": "35.02", "top": "18.80", "size": 68 },
-                  { "left": "60.43", "top": "39.48", "size": 68 }, { "left": "83.03", "top": "67.21", "size": 68 },
-                  { "left": "23.16", "top": "59.17", "size": 68 }, { "left": "17.63", "top": "48.39", "size": 68 },
-                  { "left": "83.32", "top": "46.09", "size": 68 }, { "left": "34.77", "top": "71.67", "size": 68 },
-                  { "left": "34.94", "top": "27.56", "size": 68 }, { "left": "50.28", "top": "37.18", "size": 68 },
-                  { "left": "65.90", "top": "69.51", "size": 68 }, { "left": "70.63", "top": "39.05", "size": 68 },
-                  { "left": "83.01", "top": "57.00", "size": 68 }, { "left": "29.04", "top": "81.14", "size": 68 },
-                  { "left": "70.59", "top": "60.02", "size": 68 }, { "left": "17.77", "top": "39.62", "size": 68 },
-                  { "left": "34.96", "top": "80.57", "size": 68 }, { "left": "34.91", "top": "61.46", "size": 68 },
-                  { "left": "39.93", "top": "50.40", "size": 68 }, { "left": "65.31", "top": "39.48", "size": 68 },
-                  { "left": "83.35", "top": "75.97", "size": 68 }, { "left": "60.73", "top": "60.31", "size": 68 }
+                  { "left": "77.59", "top": "53.12", "size": 68 }, { "left": "54.40", "top": "53.12", "size": 68 },
+                  { "left": "43.58", "top": "85.84", "size": 68 }, { "left": "69.45", "top": "53.12", "size": 68 },
+                  { "left": "74.28", "top": "40.73", "size": 68 }, { "left": "54.40", "top": "40.73", "size": 68 },
+                  { "left": "82.00", "top": "40.73", "size": 68 }, { "left": "54.40", "top": "29.13", "size": 68 },
+                  { "left": "48.97", "top": "53.12", "size": 68 }, { "left": "64.44", "top": "65.14", "size": 68 },
+                  { "left": "32.87", "top": "40.73", "size": 68 }, { "left": "16.32", "top": "64.67", "size": 68 },
+                  { "left": "43.58", "top": "95.25", "size": 68 }, { "left": "43.58", "top": "75.48", "size": 68 },
+                  { "left": "27.55", "top": "29.13", "size": 68 }, { "left": "82.00", "top": "29.13", "size": 68 },
+                  { "left": "43.58", "top": "8.52", "size": 68 },  { "left": "43.58", "top": "29.13", "size": 68 },
+                  { "left": "21.64", "top": "40.73", "size": 68 }, { "left": "43.15", "top": "18.47", "size": 68 },
+                  { "left": "21.64", "top": "75.48", "size": 68 }, { "left": "48.97", "top": "29.13", "size": 68 },
+                  { "left": "21.64", "top": "65.14", "size": 68 }, { "left": "43.58", "top": "65.14", "size": 68 },
+                  { "left": "38.19", "top": "29.13", "size": 68 }, { "left": "32.87", "top": "65.14", "size": 68 },
+                  { "left": "48.97", "top": "65.14", "size": 68 }, { "left": "48.97", "top": "75.48", "size": 68 },
+                  { "left": "59.37", "top": "29.13", "size": 68 }, { "left": "64.44", "top": "29.13", "size": 68 },
+                  { "left": "43.58", "top": "53.12", "size": 68 }, { "left": "43.58", "top": "40.73", "size": 68 },
+                  { "left": "64.44", "top": "53.12", "size": 68 }, { "left": "54.40", "top": "65.14", "size": 68 },
+                  { "left": "27.55", "top": "40.73", "size": 68 }, { "left": "32.87", "top": "29.13", "size": 68 },
+                  { "left": "38.19", "top": "40.73", "size": 68 }, { "left": "59.37", "top": "53.12", "size": 68 },
+                  { "left": "48.97", "top": "85.84", "size": 68 }, { "left": "21.64", "top": "53.12", "size": 68 },
+                  { "left": "59.37", "top": "40.73", "size": 68 }, { "left": "27.55", "top": "65.14", "size": 68 },
+                  { "left": "27.55", "top": "53.12", "size": 68 }, { "left": "16.03", "top": "52.96", "size": 68 },
+                  { "left": "82.00", "top": "53.12", "size": 68 }, { "left": "27.55", "top": "85.84", "size": 68 },
+                  { "left": "32.87", "top": "17.98", "size": 68 }, { "left": "48.97", "top": "40.73", "size": 68 },
+                  { "left": "64.44", "top": "75.48", "size": 68 }, { "left": "69.45", "top": "40.73", "size": 68 },
+                  { "left": "82.00", "top": "65.14", "size": 68 }, { "left": "27.55", "top": "75.48", "size": 68 },
+                  { "left": "69.45", "top": "65.14", "size": 68 }, { "left": "32.87", "top": "53.12", "size": 68 },
+                  { "left": "32.87", "top": "85.84", "size": 68 }, { "left": "32.87", "top": "75.48", "size": 68 },
+                  { "left": "38.19", "top": "53.12", "size": 68 }, { "left": "64.44", "top": "40.73", "size": 68 },
+                  { "left": "82.00", "top": "75.48", "size": 68 }, { "left": "59.37", "top": "65.14", "size": 68 }
                 ]
             };
 
@@ -925,7 +927,6 @@
 
                 function animateIcons() {
                     iconElementsData.forEach(data => {
-                        // ★ 변경된 핵심 코드: 요소의 실제 화면상 % 위치를 기반으로 마우스 호버용 중심점을 실시간 재계산합니다!
                         data.cx = (data.currentLeft / 100) * window.innerWidth;
                         data.cy = (data.currentTop / 100) * window.innerHeight;
 
@@ -952,10 +953,7 @@
                         const topDiff = Math.abs(data.currentTop - data.targetTop);
 
                         if (scaleDiff > 0.001 || leftDiff > 0.01 || topDiff > 0.01) {
-                            // 크기 변환(호버)은 기존처럼 빠르고 즉각적으로 (0.15)
                             data.currentScale = settleMotion(data.currentScale, data.targetScale, 0.15, 0.001);
-                            
-                            // ★ 위치 이동은 훨씬 더 부드럽고 유려하게 날아가도록 0.04로 속도를 대폭 줄였습니다.
                             data.currentLeft = settleMotion(data.currentLeft, data.targetLeft, 0.04, 0.01);
                             data.currentTop = settleMotion(data.currentTop, data.targetTop, 0.04, 0.01);
 
