@@ -524,7 +524,7 @@
                 isDetailOpen = false;
                 iconOverlay.style.opacity = '0';
                 detailContainer.style.opacity = '0';
-                detailContainer.classList.remove('is-flipped'); // 닫을 때 뒤집힌 상태 초기화
+                detailContainer.classList.remove('is-flipped');
                 
                 stopBgMusic();
                 
@@ -539,10 +539,8 @@
                 }, 300);
             }
             
-            // 오버레이 클릭 시 창 닫기
             iconOverlay.addEventListener('click', closeDetailView);
             
-            // 이제 detailContainer 클릭 시 창이 닫히지 않고 플립(뒤집기) 기능 수행
             detailContainer.addEventListener('click', (e) => {
                 e.stopPropagation();
                 detailContainer.classList.toggle('is-flipped');
@@ -602,7 +600,8 @@
                     const oLeft = parseFloat(customLayout[i].left);
                     const oTop = parseFloat(customLayout[i].top);
                     
-                    const oSize = customLayout[i].size * 1.5; 
+                    // 기존 배율 1.5에서 0.8배를 곱한 1.2로 수정되었습니다.
+                    const oSize = customLayout[i].size * 1.2; 
 
                     const iconWrapper = document.createElement('div');
                     iconWrapper.classList.add('icon-wrapper');
@@ -611,6 +610,7 @@
                     iconWrapper.style.width = `${oSize}px`;
                     iconWrapper.style.height = `${oSize}px`;
 
+                    // 로딩 시 좌측 상단으로 몰리는 버그 수정을 위한 초기 위치 설정 코드
                     iconWrapper.style.left = `${oLeft}%`;
                     iconWrapper.style.top = `${oTop}%`;
                     iconWrapper.style.transform = `translate3d(-50%, -50%, 0) scale(1)`;
@@ -652,7 +652,6 @@
                         if (!isDetailOpen) {
                             isDetailOpen = true;
                             
-                            // 앞면, 뒷면 모두 동일한 이미지를 넣어 양면 카드처럼 뒤집히게 설정
                             detailImageFront.src = `detail${numStr}.png?v=${stickerAssetVersion}`;
                             detailImageBack.src = `detail${numStr}.png?v=${stickerAssetVersion}`; 
                             
